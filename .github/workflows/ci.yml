@@ -12,7 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  ci:
+    name: CI
     runs-on: ubuntu-latest
 
     steps:
