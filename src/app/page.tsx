@@ -1,11 +1,24 @@
 ﻿import Link from "next/link";
 
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
 type Deal = {
   id: string;
   name: string;
   price: number;
   originalPrice?: number;
   promoLabel?: string;
+};
+
+type SupabaseDealRow = {
+  product_id: string;
+  name: string;
+  regular_price: number;
+  effective_price: number;
+  promotion_label: string | null;
+  effective_percent_off: number | null;
+  promotion_type: "PERCENT" | "PRICE" | "BOGO" | null;
+  is_bogo: boolean | null;
 };
 
 const demoDeals: Deal[] = [
@@ -39,7 +52,44 @@ function formatEUR(value: number) {
   }).format(value);
 }
 
-export default function Home() {
+function mapPromoLabel(row: SupabaseDealRow): string | undefined {
+  if (row.promotion_label) return row.promotion_label;
+  if (row.promotion_type === "BOGO" || row.is_bogo) return "1+1";
+  if (typeof row.effective_percent_off === "number") return `-${row.effective_percent_off}%`;
+  return undefined;
+}
+
+async function getDeals(): Promise<{ deals: Deal[]; source: "demo" | "supabase" }> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) return { deals: demoDeals, source: "demo" };
+
+  const { data, error } = await supabase
+    .from("deals")
+    .select(
+      "product_id,name,regular_price,effective_price,promotion_label,effective_percent_off,promotion_type,is_bogo"
+    )
+    .order("effective_percent_off", { ascending: false, nullsFirst: false })
+    .limit(100);
+
+  if (error || !data) return { deals: demoDeals, source: "demo" };
+
+  const deals = (data as SupabaseDealRow[]).map((row) => ({
+    id: row.product_id,
+    name: row.name,
+    price: Number(row.effective_price),
+    originalPrice:
+      row.effective_price !== row.regular_price ? Number(row.regular_price) : undefined,
+    promoLabel: mapPromoLabel(row),
+  }));
+
+  return { deals, source: "supabase" };
+}
+
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const { deals, source } = await getDeals();
+
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
       <header className="sticky top-0 border-b border-black/10 bg-white/90 backdrop-blur dark:border-white/15 dark:bg-black/80">
@@ -62,7 +112,7 @@ export default function Home() {
       </header>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-6">
-        {demoDeals.map((deal) => (
+        {deals.map((deal) => (
           <article
             key={deal.id}
             className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-4 dark:border-white/15 dark:bg-black"
@@ -96,8 +146,9 @@ export default function Home() {
         ))}
 
         <p className="pt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          Demo data for now. Next step: connect to Supabase so the owner can upload real
-          products and promotions.
+          {source === "demo"
+            ? "Demo data for now. Add Supabase env vars to load real deals."
+            : "Loaded from Supabase."}
         </p>
       </main>
     </div>
