@@ -49,7 +49,7 @@ export default function Home() {
               MiniLeaf
             </span>
             <h1 className="text-lg font-semibold tracking-tight text-black dark:text-zinc-50">
-              Today's deals
+              Today&apos;s deals
             </h1>
           </div>
           <Link
