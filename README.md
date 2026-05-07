@@ -15,6 +15,33 @@ npm run dev
 
 Open http://localhost:3000
 
+## Supabase
+
+MiniLeaf can load real deals from Supabase if you configure:
+
+1) Create a Supabase project
+2) Run the SQL in `supabase/schema.sql` in the Supabase SQL Editor
+3) Copy `.env.example` to `.env.local` and set:
+	- `NEXT_PUBLIC_SUPABASE_URL`
+	- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
+
+If env vars are missing, the home page falls back to demo data.
+
+### Admin login
+
+The public site has no user accounts. Only the owner uses Supabase Auth to access `/admin`.
+
+1) In Supabase: Authentication → Users → Add user (email + password)
+2) Copy that user’s UUID
+3) In SQL Editor, run:
+
+```sql
+insert into public.admin_users (user_id, email)
+values ('<USER_UUID>', '<EMAIL>');
+```
+
+Now sign in at `/admin` with that email/password.
+
 ### Build (production)
 ```bash
 npm run lint

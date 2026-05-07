@@ -178,3 +178,91 @@ begin
       );
   end if;
 end$$;
+
+-- Privileges
+-- RLS controls row access; these GRANTs allow the roles to attempt SELECT.
+grant usage on schema public to anon, authenticated;
+grant select on table public.products to anon, authenticated;
+grant select on table public.promotions to anon, authenticated;
+grant select on table public.deals to anon, authenticated;
+
+-- Admin auth (only for /admin panel)
+-- End-users remain anonymous; only owners/admins sign in.
+
+create table if not exists public.admin_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.admin_users enable row level security;
+
+-- Helper for RLS
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+as $$
+  select exists(
+    select 1
+    from public.admin_users au
+    where au.user_id = auth.uid()
+  );
+$$;
+
+-- Admin users: allow an authenticated user to read only their own admin row.
+drop policy if exists admin_users_select_own on public.admin_users;
+create policy admin_users_select_own
+  on public.admin_users
+  for select
+  to authenticated
+  using (user_id = auth.uid());
+
+-- Products: admin-only writes
+drop policy if exists products_admin_insert on public.products;
+create policy products_admin_insert
+  on public.products
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+drop policy if exists products_admin_update on public.products;
+create policy products_admin_update
+  on public.products
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists products_admin_delete on public.products;
+create policy products_admin_delete
+  on public.products
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+-- Promotions: admin-only writes
+drop policy if exists promotions_admin_insert on public.promotions;
+create policy promotions_admin_insert
+  on public.promotions
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+drop policy if exists promotions_admin_update on public.promotions;
+create policy promotions_admin_update
+  on public.promotions
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists promotions_admin_delete on public.promotions;
+create policy promotions_admin_delete
+  on public.promotions
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+-- Privileges for admin check from client
+grant select on table public.admin_users to authenticated;

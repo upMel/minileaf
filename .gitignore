@@ -28,6 +28,7 @@
 .DS_Store
 *.pem
 *.code-workspace
+dbPass.txt
 
 # debug
 npm-debug.log*
