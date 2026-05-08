@@ -2,20 +2,24 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ThemeToggle";
+import SearchBar from "@/components/SearchBar";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { useProductForm } from "@/hooks/useProductForm";
+import { useSearchFilters } from "@/hooks/useSearchFilters";
+import { fetchCategories } from "@/services/categories";
 
+import CategoryManager from "./CategoryManager";
 import DeleteModal from "./DeleteModal";
 import ProductFormCard from "./ProductFormCard";
 import ProductList from "./ProductList";
 import SignInCard from "./SignInCard";
-import type { ProductRow } from "@/types/admin";
+import type { CategoryRow, ProductRow } from "@/types/admin";
 
 export default function AdminPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -29,6 +33,43 @@ export default function AdminPage() {
     supabase,
     refresh
   );
+
+  const { filters, setFilters } = useSearchFilters();
+
+  const [dbCategories, setDbCategories] = useState<CategoryRow[]>([]);
+  const loadCategories = useCallback(async () => {
+    if (!supabase || adminState.status !== "authorized") return;
+    const { data } = await fetchCategories(supabase);
+    setDbCategories(data);
+  }, [supabase, adminState.status]);
+
+  useEffect(() => {
+    void loadCategories();
+  }, [loadCategories]);
+
+  // Derive available categories from loaded products
+  const availableCategories = useMemo(() => {
+    const cats = new Set<string>();
+    products.forEach((p) => { if (p.category) cats.add(p.category); });
+    return Array.from(cats).sort();
+  }, [products]);
+
+  // Apply filters locally
+  const filteredProducts = useMemo(() => {
+    const q = filters.query.trim().toLowerCase();
+    const min = filters.minPrice !== "" ? parseFloat(filters.minPrice) : null;
+    const max = filters.maxPrice !== "" ? parseFloat(filters.maxPrice) : null;
+    return products.filter((p) => {
+      if (q && !p.name.toLowerCase().includes(q) && !p.category?.toLowerCase().includes(q)) return false;
+      if (filters.categories.length > 0 && !filters.categories.includes(p.category ?? "")) return false;
+      if (filters.hasPromoOnly && !promotionsByProductId[p.id]?.is_active) return false;
+      if (min !== null && !isNaN(min) && p.price < min) return false;
+      if (max !== null && !isNaN(max) && p.price > max) return false;
+      if (filters.status === "active" && !p.is_active) return false;
+      if (filters.status === "inactive" && p.is_active) return false;
+      return true;
+    });
+  }, [products, promotionsByProductId, filters]);
 
   // Delete modal — pure local UI state
   const [deleteModalProduct, setDeleteModalProduct] = useState<ProductRow | null>(null);
@@ -69,10 +110,10 @@ export default function AdminPage() {
         <div className="mx-auto flex w-full items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Image
-              src="/icon-192.png"
+              src="/miniLeaf.png"
               alt="MiniLeaf"
-              width={36}
-              height={36}
+              width={60}
+              height={60}
               className="rounded-xl"
               priority
             />
@@ -135,10 +176,17 @@ export default function AdminPage() {
               onNew={startNew}
               isSaving={isSaving}
               saveError={saveError}
+              categories={dbCategories}
+            />
+
+            <CategoryManager
+              supabase={supabase!}
+              categories={dbCategories}
+              onRefresh={() => void loadCategories()}
             />
 
             <ProductList
-              products={products}
+              products={filteredProducts}
               promotionsByProductId={promotionsByProductId}
               isLoading={isLoading}
               error={error}
@@ -146,6 +194,16 @@ export default function AdminPage() {
               onEdit={(p) => void startEdit(p)}
               onToggleActive={(p) => void toggleActive(p)}
               onDelete={openDeleteModal}
+              totalCount={products.length}
+              searchBar={
+                <SearchBar
+                  filters={filters}
+                  availableCategories={availableCategories}
+                  onChange={setFilters}
+                  showStatus
+                  placeholder="Search products…"
+                />
+              }
             />
           </>
         )}

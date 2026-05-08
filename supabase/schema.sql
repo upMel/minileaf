@@ -18,9 +18,9 @@ create table if not exists public.products (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
 
-  sku text unique,
+  barcode text unique,
   name text not null,
-  brand text,
+  supplier text,
   category text,
   image_url text,
 
@@ -47,6 +47,23 @@ end$$;
 
 create index if not exists products_is_active_idx on public.products (is_active);
 create index if not exists products_category_idx on public.products (category);
+
+-- Rename sku → barcode for existing databases (safe to re-run)
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'products' and column_name = 'sku'
+  ) then
+    alter table public.products rename column sku to barcode;
+  end if;
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'products' and column_name = 'brand'
+  ) then
+    alter table public.products rename column brand to supplier;
+  end if;
+end$$;
 
 -- Promotions (discounts + 1+1)
 create table if not exists public.promotions (
@@ -120,9 +137,9 @@ drop view if exists public.deals;
 create or replace view public.deals as
 select
   p.id as product_id,
-  p.sku,
+  p.barcode,
   p.name,
-  p.brand,
+  p.supplier,
   p.category,
   p.image_url,
   p.competitor_name,
@@ -301,3 +318,44 @@ create policy promotions_admin_delete
 
 -- Privileges for admin check from client
 grant select on table public.admin_users to authenticated;
+
+-- Categories (admin-managed, seeded from e-katanalotis)
+create table if not exists public.categories (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  parent_id uuid references public.categories(id) on delete cascade,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- Unique name per level: root categories unique by name; subcategories unique by (name, parent)
+create unique index if not exists categories_root_name_unique
+  on public.categories (lower(name)) where parent_id is null;
+
+alter table public.categories enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where schemaname = 'public' and tablename = 'categories' and policyname = 'public_select_categories'
+  ) then
+    create policy public_select_categories
+      on public.categories for select to anon, authenticated using (true);
+  end if;
+end$$;
+
+drop policy if exists categories_admin_insert on public.categories;
+create policy categories_admin_insert
+  on public.categories for insert to authenticated with check (public.is_admin());
+
+drop policy if exists categories_admin_update on public.categories;
+create policy categories_admin_update
+  on public.categories for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists categories_admin_delete on public.categories;
+create policy categories_admin_delete
+  on public.categories for delete to authenticated using (public.is_admin());
+
+grant select on table public.categories to anon, authenticated;
+grant insert, update, delete on table public.categories to authenticated;
