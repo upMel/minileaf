@@ -1,0 +1,167 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import SearchBar from "@/components/SearchBar";
+import { defaultFilters } from "@/types/search";
+import type { SearchFilters } from "@/types/search";
+
+export type Deal = {
+  id: string;
+  name: string;
+  category?: string;
+  imageUrl?: string;
+  price: number;
+  originalPrice?: number;
+  promoLabel?: string;
+  competitorName?: string;
+  competitorPrice?: number;
+};
+
+function formatEUR(value: number) {
+  return new Intl.NumberFormat("el-GR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+type Props = {
+  deals: Deal[];
+  source: "demo" | "supabase";
+};
+
+export default function DealsGrid({ deals, source }: Props) {
+  const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
+
+  const availableCategories = useMemo(() => {
+    const cats = new Set<string>();
+    deals.forEach((d) => {
+      if (d.category) cats.add(d.category);
+    });
+    return Array.from(cats).sort();
+  }, [deals]);
+
+  const filtered = useMemo(() => {
+    const q = filters.query.trim().toLowerCase();
+    const min = filters.minPrice !== "" ? parseFloat(filters.minPrice) : null;
+    const max = filters.maxPrice !== "" ? parseFloat(filters.maxPrice) : null;
+
+    return deals.filter((deal) => {
+      if (q && !deal.name.toLowerCase().includes(q) && !deal.category?.toLowerCase().includes(q)) {
+        return false;
+      }
+      if (
+        filters.categories.length > 0 &&
+        !filters.categories.includes(deal.category ?? "")
+      ) {
+        return false;
+      }
+      if (filters.hasPromoOnly && !deal.promoLabel) return false;
+      if (min !== null && !isNaN(min) && deal.price < min) return false;
+      if (max !== null && !isNaN(max) && deal.price > max) return false;
+      return true;
+    });
+  }, [deals, filters]);
+
+  return (
+    <>
+      {/* Search + filters bar */}
+      <SearchBar
+        filters={filters}
+        availableCategories={availableCategories}
+        onChange={setFilters}
+        placeholder="Search products or categories…"
+      />
+
+      {/* Results count when filtering */}
+      {(filters.query !== "" ||
+        filters.categories.length > 0 ||
+        filters.hasPromoOnly ||
+        filters.minPrice !== "" ||
+        filters.maxPrice !== "") && (
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          {filtered.length} of {deals.length} deals
+        </p>
+      )}
+
+      {/* Grid */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-sm text-zinc-400">
+          No deals match your filters.
+        </div>
+      ) : (
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {filtered.map((deal) => (
+            <article
+              key={deal.id}
+              className="group relative aspect-[3/4] w-full overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-zinc-900"
+            >
+              {/* Image */}
+              {deal.imageUrl ? (
+                <img
+                  src={deal.imageUrl}
+                  alt={deal.name}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-contain"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-zinc-50 dark:bg-zinc-800" />
+              )}
+
+              {/* Subtle gradient at bottom to fade the image into the name chip */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+
+              {/* ── TOP: price + competitor + promo badge ── */}
+              <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-1.5 p-2.5">
+                {/* Price chip */}
+                <div className="rounded-2xl border border-black/15 bg-white/65 px-3 py-2 shadow-sm backdrop-blur dark:border-white/15 dark:bg-black/55">
+                  <div className="text-lg font-extrabold leading-none tracking-tight text-accent drop-shadow-sm">
+                    {formatEUR(deal.price)}
+                  </div>
+                  {typeof deal.competitorPrice === "number" ? (
+                    <div className="mt-1 flex items-center gap-1 text-[10px] leading-none text-zinc-600 dark:text-zinc-300">
+                      <span className="max-w-[60px] truncate opacity-70">
+                        {deal.competitorName ?? "Competitor"}
+                      </span>
+                      <span className="opacity-50 line-through decoration-1">
+                        {formatEUR(deal.competitorPrice)}
+                      </span>
+                    </div>
+                  ) : null}
+                  {deal.originalPrice && typeof deal.competitorPrice !== "number" ? (
+                    <div className="mt-1 text-[10px] leading-none text-zinc-600 opacity-50 line-through decoration-1 dark:text-zinc-300">
+                      {formatEUR(deal.originalPrice)}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Promo badge */}
+                {deal.promoLabel ? (
+                  <span className="rounded-full bg-badge px-2.5 py-1 text-[10px] font-bold shadow-sm">
+                    {deal.promoLabel}
+                  </span>
+                ) : null}
+              </div>
+
+              {/* ── BOTTOM: name ── */}
+              <div className="absolute inset-x-0 bottom-0 p-2.5">
+                <div className="rounded-2xl border border-black/10 bg-white/35 px-2.5 py-1.5 backdrop-blur-sm dark:border-white/10 dark:bg-black/30">
+                  <h2 className="line-clamp-2 text-[10px] font-semibold leading-snug text-zinc-900 dark:text-zinc-100">
+                    {deal.name}
+                  </h2>
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      <p className="pt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        {source === "demo"
+          ? "Demo data for now. Add Supabase env vars to load real deals."
+          : "Loaded from Supabase."}
+      </p>
+    </>
+  );
+}
