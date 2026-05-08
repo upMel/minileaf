@@ -2,16 +2,28 @@
 -- Run AFTER applying supabase/schema.sql
 
 -- Insert products
-insert into public.products (sku, name, brand, category, image_url, price, is_active)
+insert into public.products (
+  sku,
+  name,
+  brand,
+  category,
+  image_url,
+  competitor_name,
+  competitor_price,
+  price,
+  is_active
+)
 values
-  ('YOG-200', 'Greek yogurt 200g', null, 'Dairy', null, 3.49, true),
-  ('PAS-500', 'Pasta 500g', null, 'Pantry', null, 1.89, true),
-  ('SHA-400', 'Shampoo 400ml', null, 'Personal care', null, 4.50, true)
+  ('YOG-200', 'Greek yogurt 200g', null, 'Dairy', null, 'BigMart', 3.99, 3.49, true),
+  ('PAS-500', 'Pasta 500g', null, 'Pantry', null, 'BigMart', 2.29, 1.89, true),
+  ('SHA-400', 'Shampoo 400ml', null, 'Personal care', null, 'BigMart', 5.50, 4.50, true)
 on conflict (sku) do update set
   name = excluded.name,
   brand = excluded.brand,
   category = excluded.category,
   image_url = excluded.image_url,
+  competitor_name = excluded.competitor_name,
+  competitor_price = excluded.competitor_price,
   price = excluded.price,
   is_active = excluded.is_active;
 

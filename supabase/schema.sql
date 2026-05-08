@@ -28,6 +28,23 @@ create table if not exists public.products (
   is_active boolean not null default true
 );
 
+-- Migrations (safe to re-run)
+alter table public.products add column if not exists competitor_name text;
+alter table public.products add column if not exists competitor_price numeric(10,2);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'products_competitor_price_non_negative'
+  ) then
+    alter table public.products
+      add constraint products_competitor_price_non_negative
+      check (competitor_price is null or competitor_price >= 0);
+  end if;
+end$$;
+
 create index if not exists products_is_active_idx on public.products (is_active);
 create index if not exists products_category_idx on public.products (category);
 
@@ -99,6 +116,7 @@ end$$;
 
 -- A view for the customer deals page
 -- (keeps UI query simple)
+drop view if exists public.deals;
 create or replace view public.deals as
 select
   p.id as product_id,
@@ -107,6 +125,8 @@ select
   p.brand,
   p.category,
   p.image_url,
+  p.competitor_name,
+  p.competitor_price,
   p.price as regular_price,
 
   pr.id as promotion_id,
@@ -209,6 +229,21 @@ as $$
     where au.user_id = auth.uid()
   );
 $$;
+
+-- Admins can select all rows (including inactive) in admin UI.
+drop policy if exists products_admin_select_all on public.products;
+create policy products_admin_select_all
+  on public.products
+  for select
+  to authenticated
+  using (public.is_admin());
+
+drop policy if exists promotions_admin_select_all on public.promotions;
+create policy promotions_admin_select_all
+  on public.promotions
+  for select
+  to authenticated
+  using (public.is_admin());
 
 -- Admin users: allow an authenticated user to read only their own admin row.
 drop policy if exists admin_users_select_own on public.admin_users;
