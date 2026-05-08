@@ -1,5 +1,59 @@
 # MiniLeaf — Notes / Future Plan
 
+---
+
+## Session log — 2026-05-08
+
+### What was built
+
+**1. Competitor prices API**
+- Source: `https://warply.s3.amazonaws.com/applications/ed840ad545884deeb6c6b699176797ed/basket-retailers/prices.json`
+  — 2.4 MB, ~2910 products, 11 Greek supermarkets (masoutis, ab, bazaar, lidl, xalkiadakis, sklavenitis, mymarket, marketin, efresh, galaxias, kritikos)
+- `GET /api/competitor-prices?barcode=XXX` — returns `{ name, category, image_url, prices[] }` sorted cheapest-first; 24 h server cache
+- `GET /api/competitor-categories` — returns full S3 category hierarchy with subcategories
+- Greek-character image filenames must be `encodeURIComponent`-encoded per path segment
+- `COMPETITOR_S3_URL` lives in `src/lib/competitor.ts` (Next.js rejects non-handler exports from route files)
+- `next.config.ts`: added `warply.s3.amazonaws.com` to `remotePatterns`
+
+**2. Categories management**
+- New `categories` table: `id uuid, name, parent_id (self-ref), sort_order, created_at`; unique index on `lower(name)` for root rows
+- RLS: public SELECT, admin INSERT/UPDATE/DELETE
+- `src/services/categories.ts`: `fetchCategories`, `insertCategory`, `deleteCategory`, `renameCategory`, `importCategories` (deduplicates before inserting)
+- `CategoryManager` admin component: "Sync from e-katanalotis" button (inserts roots, then subs with parent_id), add root, inline rename/delete
+
+**3. sku → barcode, brand → supplier**
+- `products` table column renames; schema migration block is safe to re-run
+- `deals` view updated
+- All TypeScript types, services, hooks and UI labels updated accordingly
+- `supplier` field now rendered in the admin product form (was in schema but not in UI)
+
+**4. Admin product form**
+- Barcode field triggers `GET /api/competitor-prices` lookup
+- Lookup result panel: 96px image preview, name, category, "Apply" button auto-fills all three
+- Image URL field: live 40×40 thumbnail preview (hides on error)
+- Category `<select>` uses `<optgroup>` grouping from Supabase `categories` table (no more S3 fetch inside form)
+
+**5. Deal cards UI**
+- Grid: 2 col mobile → 3 sm → 4 lg; portrait `aspect-[3/4]`, `rounded-3xl`, hover lift
+- Price chip at **top-left**: our price (accent, extrabold) + competitor name + strikethrough price on one inline row
+- Promo badge at **top-right**
+- Name chip at **bottom**: `line-clamp-2`, semi-transparent frosted glass
+- `SearchBar` component: text search, multi-select category chips, on-sale toggle, min/max price range
+- `useSearchFilters` hook + `SearchFilters` type extracted to `src/types/search.ts`
+- `Checkbox` UI component added
+
+### Decisions made
+- **Suppliers**: no separate table needed — the S3 `suppliers` array (~500 Greek food producers) maps directly to `products.supplier` (free-text field)
+- **Images**: public S3 URLs used directly; no Supabase Storage upload yet (see section 1 below for the plan)
+
+### Schema re-run reminder
+The updated `supabase/schema.sql` must be run in Supabase SQL Editor after pulling:
+- Renames `sku → barcode` and `brand → supplier` if those columns still exist
+- Creates the `categories` table + policies
+- Recreates the `deals` view with corrected column names
+
+---
+
 ## 1) Upload product images (mobile / PC / camera)
 
 ### Goal
