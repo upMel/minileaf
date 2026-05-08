@@ -1,8 +1,8 @@
 export type ProductRow = {
   id: string;
-  sku: string | null;
+  barcode: string | null;
   name: string;
-  brand: string | null;
+  supplier: string | null;
   category: string | null;
   image_url: string | null;
   competitor_name: string | null;
@@ -10,6 +10,13 @@ export type ProductRow = {
   price: number;
   is_active: boolean;
   updated_at: string;
+};
+
+export type CategoryRow = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  sort_order: number;
 };
 
 export type PromotionType = "PERCENT" | "PRICE" | "BOGO";
@@ -32,9 +39,9 @@ export type PromotionMode = "NONE" | PromotionType;
 
 export type ProductFormState = {
   id?: string;
-  sku: string;
+  barcode: string;
   name: string;
-  brand: string;
+  supplier: string;
   category: string;
   imageUrl: string;
   competitorName: string;
@@ -53,9 +60,9 @@ export type ProductFormState = {
 };
 
 export const emptyForm: ProductFormState = {
-  sku: "",
+  barcode: "",
   name: "",
-  brand: "",
+  supplier: "",
   category: "",
   imageUrl: "",
   competitorName: "",

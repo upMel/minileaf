@@ -5,7 +5,7 @@
 insert into public.products (
   sku,
   name,
-  brand,
+  supplier,
   category,
   image_url,
   competitor_name,
@@ -19,7 +19,7 @@ values
   ('SHA-400', 'Shampoo 400ml', null, 'Personal care', null, 'BigMart', 5.50, 4.50, true)
 on conflict (sku) do update set
   name = excluded.name,
-  brand = excluded.brand,
+  supplier = excluded.supplier,
   category = excluded.category,
   image_url = excluded.image_url,
   competitor_name = excluded.competitor_name,

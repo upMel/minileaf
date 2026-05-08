@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
@@ -25,6 +27,10 @@ type Props = {
   onEdit: (p: ProductRow) => void;
   onToggleActive: (p: ProductRow) => void;
   onDelete: (p: ProductRow) => void;
+  /** Optional search/filter bar rendered inside the card header area */
+  searchBar?: ReactNode;
+  /** Total unfiltered count — shown alongside results count */
+  totalCount?: number;
 };
 
 export default function ProductList({
@@ -36,6 +42,8 @@ export default function ProductList({
   onEdit,
   onToggleActive,
   onDelete,
+  searchBar,
+  totalCount,
 }: Props) {
   return (
     <Card>
@@ -45,6 +53,14 @@ export default function ProductList({
           Refresh
         </Button>
       </div>
+
+      {searchBar && <div className="mt-3">{searchBar}</div>}
+
+      {typeof totalCount === "number" && products.length !== totalCount && (
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          {products.length} of {totalCount} products
+        </p>
+      )}
 
       {error ? (
         <div className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</div>
@@ -89,10 +105,10 @@ export default function ProductList({
                     ) : null}
                   </div>
 
-                  {p.sku || p.category ? (
+                  {p.barcode || p.category ? (
                     <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                      {p.sku ? `SKU: ${p.sku}` : null}
-                      {p.sku && p.category ? " · " : null}
+                      {p.barcode ? `Barcode: ${p.barcode}` : null}
+                      {p.barcode && p.category ? " · " : null}
                       {p.category ? `Category: ${p.category}` : null}
                     </div>
                   ) : null}

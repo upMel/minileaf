@@ -4,9 +4,9 @@ import type { ProductRow } from "@/types/admin";
 type Client = NonNullable<ReturnType<typeof createSupabaseBrowserClient>>;
 
 export type ProductPayload = {
-  sku: string | null;
+  barcode: string | null;
   name: string;
-  brand: string | null;
+  supplier: string | null;
   category: string | null;
   image_url: string | null;
   competitor_name: string | null;
@@ -16,7 +16,7 @@ export type ProductPayload = {
 };
 
 const PRODUCT_FIELDS =
-  "id,sku,name,brand,category,image_url,competitor_name,competitor_price,price,is_active,updated_at";
+  "id,barcode,name,supplier,category,image_url,competitor_name,competitor_price,price,is_active,updated_at";
 
 export async function fetchProducts(
   supabase: Client

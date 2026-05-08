@@ -35,9 +35,9 @@ export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
 
     setForm({
       id: p.id,
-      sku: p.sku ?? "",
+      barcode: p.barcode ?? "",
       name: p.name,
-      brand: p.brand ?? "",
+      supplier: p.supplier ?? "",
       category: p.category ?? "",
       imageUrl: p.image_url ?? "",
       competitorName: p.competitor_name ?? "",
@@ -77,9 +77,9 @@ export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
     }
 
     const payload = {
-      sku: form.sku.trim() || null,
+      barcode: form.barcode.trim() || null,
       name: form.name.trim(),
-      brand: form.brand.trim() || null,
+      supplier: form.supplier.trim() || null,
       category: form.category.trim() || null,
       image_url: form.imageUrl.trim() || null,
       competitor_name: form.competitorName.trim() || null,
