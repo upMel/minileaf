@@ -3,13 +3,15 @@
 import { useMemo, useState } from "react";
 
 import SearchBar from "@/components/SearchBar";
+import type { CategoryNode } from "@/components/SearchBar";
 import { defaultFilters } from "@/types/search";
 import type { SearchFilters } from "@/types/search";
 
 export type Deal = {
   id: string;
   name: string;
-  category?: string;
+  categoryId?: string;  // UUID — used for filtering
+  category?: string;    // display name (legacy fallback)
   imageUrl?: string;
   price: number;
   originalPrice?: number;
@@ -29,18 +31,27 @@ function formatEUR(value: number) {
 type Props = {
   deals: Deal[];
   source: "demo" | "supabase";
+  categoryTree?: CategoryNode[];
 };
 
-export default function DealsGrid({ deals, source }: Props) {
+export default function DealsGrid({ deals, source, categoryTree = [] }: Props) {
   const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
 
-  const availableCategories = useMemo(() => {
-    const cats = new Set<string>();
-    deals.forEach((d) => {
-      if (d.category) cats.add(d.category);
-    });
-    return Array.from(cats).sort();
-  }, [deals]);
+  // Only show categories/subcategories that have at least one deal linked via categoryId.
+  // Falls back to the full tree when no products are linked yet (e.g. pending migration).
+  const activeTree = useMemo(() => {
+    const activeCatIds = new Set(deals.map((d) => d.categoryId).filter(Boolean) as string[]);
+    if (activeCatIds.size === 0) return categoryTree;
+    return categoryTree
+      .map((root) => {
+        if (root.children.length === 0) {
+          return activeCatIds.has(root.id) ? root : null;
+        }
+        const activeChildren = root.children.filter((c) => activeCatIds.has(c.id));
+        return activeChildren.length > 0 ? { ...root, children: activeChildren } : null;
+      })
+      .filter((n): n is CategoryNode => n !== null);
+  }, [deals, categoryTree]);
 
   const filtered = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
@@ -51,11 +62,9 @@ export default function DealsGrid({ deals, source }: Props) {
       if (q && !deal.name.toLowerCase().includes(q) && !deal.category?.toLowerCase().includes(q)) {
         return false;
       }
-      if (
-        filters.categories.length > 0 &&
-        !filters.categories.includes(deal.category ?? "")
-      ) {
-        return false;
+      if (filters.categories.length > 0) {
+        // Filter by UUID — check deal.categoryId directly
+        if (!deal.categoryId || !filters.categories.includes(deal.categoryId)) return false;
       }
       if (filters.hasPromoOnly && !deal.promoLabel) return false;
       if (min !== null && !isNaN(min) && deal.price < min) return false;
@@ -69,7 +78,7 @@ export default function DealsGrid({ deals, source }: Props) {
       {/* Search + filters bar */}
       <SearchBar
         filters={filters}
-        availableCategories={availableCategories}
+        categoryTree={activeTree}
         onChange={setFilters}
         placeholder="Search products or categories…"
       />

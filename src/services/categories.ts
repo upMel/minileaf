@@ -68,3 +68,18 @@ export async function importCategories(
   const { error } = await supabase.from("categories").insert(toInsert);
   return { error: error?.message ?? null };
 }
+
+/**
+ * Remove all categories. Nulls out products.category_id first to satisfy the
+ * FK RESTRICT constraint, then deletes root categories (cascades to children).
+ */
+export async function clearAllCategories(supabase: Client): Promise<{ error: string | null }> {
+  const { error: unlinkErr } = await supabase
+    .from("products")
+    .update({ category_id: null })
+    .not("category_id", "is", null);
+  if (unlinkErr) return { error: unlinkErr.message };
+
+  const { error } = await supabase.from("categories").delete().is("parent_id", null);
+  return { error: error?.message ?? null };
+}

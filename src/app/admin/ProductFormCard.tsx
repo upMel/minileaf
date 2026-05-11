@@ -82,23 +82,23 @@ export default function ProductFormCard({
             </Field>
             <Field label="Category">
               <SelectInput
-                value={form.category}
-                onChange={(v) => set({ category: v })}
+                value={form.categoryId}
+                onChange={(v) => set({ categoryId: v })}
               >
                 <option value="">— select —</option>
                 {roots.map((root) => {
                   const subs = childrenOf(root.id);
                   return subs.length > 0 ? (
                     <optgroup key={root.id} label={root.name}>
-                      <option value={root.name}>{root.name} (all)</option>
+                      <option value={root.id}>{root.name} (all)</option>
                       {subs.map((sub) => (
-                        <option key={sub.id} value={sub.name}>
+                        <option key={sub.id} value={sub.id}>
                           {sub.name}
                         </option>
                       ))}
                     </optgroup>
                   ) : (
-                    <option key={root.id} value={root.name}>
+                    <option key={root.id} value={root.id}>
                       {root.name}
                     </option>
                   );
@@ -315,16 +315,37 @@ export default function ProductFormCard({
                   ) : null}
                   {lookupResult.category ? (
                     <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-                      <span className="font-medium text-zinc-800 dark:text-zinc-200">Category: </span>{lookupResult.category}
+                      <span className="font-medium text-zinc-800 dark:text-zinc-200">Category: </span>
+                      {lookupResult.sub_category
+                        ? `${lookupResult.category} › ${lookupResult.sub_category}`
+                        : lookupResult.category}
                     </p>
                   ) : null}
                   <button
                     type="button"
-                    onClick={() => set({
-                      ...(lookupResult.name ? { name: lookupResult.name } : {}),
-                      ...(lookupResult.category ? { category: lookupResult.category } : {}),
-                      ...(lookupResult.image_url ? { imageUrl: lookupResult.image_url } : {}),
-                    })}
+                    onClick={() => {
+                      // Match subcategory first (more specific), then fall back to root
+                      const matchedCat = (() => {
+                        if (lookupResult.sub_category) {
+                          const sub = categories.find(
+                            (c) => c.parent_id !== null &&
+                              c.name.toLowerCase() === lookupResult.sub_category!.toLowerCase()
+                          );
+                          if (sub) return sub;
+                        }
+                        if (lookupResult.category) {
+                          return categories.find(
+                            (c) => c.name.toLowerCase() === lookupResult.category!.toLowerCase()
+                          ) ?? null;
+                        }
+                        return null;
+                      })();
+                      set({
+                        ...(lookupResult.name ? { name: lookupResult.name } : {}),
+                        ...(matchedCat ? { categoryId: matchedCat.id } : {}),
+                        ...(lookupResult.image_url ? { imageUrl: lookupResult.image_url } : {}),
+                      });
+                    }}
                     className="mt-2 rounded-lg px-2 py-0.5 text-xs font-medium text-[color:var(--accent)] hover:bg-[color:var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                   >
                     Apply name, category &amp; image →

@@ -28,9 +28,23 @@ create table if not exists public.products (
   is_active boolean not null default true
 );
 
+-- Categories (admin-managed, seeded from e-katanalotis)
+-- Created here so that the products migrations below can reference it via FK.
+create table if not exists public.categories (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  parent_id uuid references public.categories(id) on delete cascade,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists categories_root_name_unique
+  on public.categories (lower(name)) where parent_id is null;
+
 -- Migrations (safe to re-run)
 alter table public.products add column if not exists competitor_name text;
 alter table public.products add column if not exists competitor_price numeric(10,2);
+alter table public.products add column if not exists category_id uuid references public.categories(id);
 
 do $$
 begin
@@ -64,6 +78,16 @@ begin
     alter table public.products rename column brand to supplier;
   end if;
 end$$;
+
+-- Backfill category_id from category text (match by name, case-insensitive)
+update public.products p
+set category_id = c.id
+from public.categories c
+where lower(p.category) = lower(c.name)
+  and p.category_id is null
+  and p.category is not null;
+
+create index if not exists products_category_id_idx on public.products (category_id);
 
 -- Promotions (discounts + 1+1)
 create table if not exists public.promotions (
@@ -134,13 +158,22 @@ end$$;
 -- A view for the customer deals page
 -- (keeps UI query simple)
 drop view if exists public.deals;
-create or replace view public.deals as
+create or replace view public.deals with (security_invoker = true) as
 select
   p.id as product_id,
   p.barcode,
   p.name,
   p.supplier,
+
+  -- category as free-text (legacy, kept for backward compat)
   p.category,
+
+  -- structured category fields (preferred)
+  p.category_id,
+  cat.name        as category_name,
+  cat.parent_id   as category_root_id,
+  coalesce(root.name, cat.name) as category_root_name,
+
   p.image_url,
   p.competitor_name,
   p.competitor_price,
@@ -172,6 +205,8 @@ select
     else null
   end as effective_percent_off
 from public.products p
+left join public.categories cat  on cat.id  = p.category_id
+left join public.categories root on root.id = cat.parent_id
 left join public.promotions pr
   on pr.product_id = p.id
   and pr.is_active = true
@@ -319,19 +354,7 @@ create policy promotions_admin_delete
 -- Privileges for admin check from client
 grant select on table public.admin_users to authenticated;
 
--- Categories (admin-managed, seeded from e-katanalotis)
-create table if not exists public.categories (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  parent_id uuid references public.categories(id) on delete cascade,
-  sort_order integer not null default 0,
-  created_at timestamptz not null default now()
-);
-
--- Unique name per level: root categories unique by name; subcategories unique by (name, parent)
-create unique index if not exists categories_root_name_unique
-  on public.categories (lower(name)) where parent_id is null;
-
+-- Categories: RLS + policies + grants (table already created above)
 alter table public.categories enable row level security;
 
 do $$

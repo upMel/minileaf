@@ -7,7 +7,7 @@ export type ProductPayload = {
   barcode: string | null;
   name: string;
   supplier: string | null;
-  category: string | null;
+  category_id: string | null;
   image_url: string | null;
   competitor_name: string | null;
   competitor_price: number | null;
@@ -16,7 +16,7 @@ export type ProductPayload = {
 };
 
 const PRODUCT_FIELDS =
-  "id,barcode,name,supplier,category,image_url,competitor_name,competitor_price,price,is_active,updated_at";
+  "id,barcode,name,supplier,category,category_id,image_url,competitor_name,competitor_price,price,is_active,updated_at";
 
 export async function fetchProducts(
   supabase: Client

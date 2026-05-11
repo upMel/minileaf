@@ -6,11 +6,13 @@ import ThemeToggle from "@/components/ThemeToggle";
 import ViewDropdown from "@/components/ViewDropdown";
 import DealsGrid from "@/components/DealsGrid";
 import type { Deal } from "@/components/DealsGrid";
+import type { CategoryNode } from "@/components/SearchBar";
 
 type SupabaseDealRow = {
   product_id: string;
   name: string;
   category: string | null;
+  category_id: string | null;
   image_url: string | null;
   competitor_name: string | null;
   competitor_price: number | null;
@@ -21,6 +23,19 @@ type SupabaseDealRow = {
   promotion_type: "PERCENT" | "PRICE" | "BOGO" | null;
   is_bogo: boolean | null;
 };
+
+type SupabaseCategoryRow = { id: string; name: string; parent_id: string | null };
+
+function buildCategoryTree(rows: SupabaseCategoryRow[]): CategoryNode[] {
+  const roots = rows.filter((r) => r.parent_id === null);
+  return roots.map((root) => ({
+    id: root.id,
+    name: root.name,
+    children: rows
+      .filter((r) => r.parent_id === root.id)
+      .map((sub) => ({ id: sub.id, name: sub.name, children: [] })),
+  }));
+}
 
 const demoDeals: Deal[] = [
   {
@@ -55,23 +70,30 @@ function mapPromoLabel(row: SupabaseDealRow): string | undefined {
   return undefined;
 }
 
-async function getDeals(): Promise<{ deals: Deal[]; source: "demo" | "supabase" }> {
+async function getDeals(): Promise<{ deals: Deal[]; categoryTree: CategoryNode[]; source: "demo" | "supabase" }> {
   const supabase = createSupabaseServerClient();
-  if (!supabase) return { deals: demoDeals, source: "demo" };
+  if (!supabase) return { deals: demoDeals, categoryTree: [], source: "demo" };
 
-  const { data, error } = await supabase
-    .from("deals")
-    .select(
-      "product_id,name,category,image_url,competitor_name,competitor_price,regular_price,effective_price,promotion_label,effective_percent_off,promotion_type,is_bogo"
-    )
-    .order("effective_percent_off", { ascending: false, nullsFirst: false })
-    .limit(100);
+  const [dealsResult, catsResult] = await Promise.all([
+    supabase
+      .from("deals")
+      .select(
+        "product_id,name,category,category_id,image_url,competitor_name,competitor_price,regular_price,effective_price,promotion_label,effective_percent_off,promotion_type,is_bogo"
+      )
+      .order("effective_percent_off", { ascending: false, nullsFirst: false })
+      .limit(100),
+    supabase
+      .from("categories")
+      .select("id,name,parent_id")
+      .order("sort_order", { ascending: true }),
+  ]);
 
-  if (error || !data) return { deals: demoDeals, source: "demo" };
+  if (dealsResult.error || !dealsResult.data) return { deals: demoDeals, categoryTree: [], source: "demo" };
 
-  const deals = (data as SupabaseDealRow[]).map((row) => ({
+  const deals = (dealsResult.data as SupabaseDealRow[]).map((row) => ({
     id: row.product_id,
     name: row.name,
+    categoryId: row.category_id ?? undefined,
     category: row.category ?? undefined,
     imageUrl: row.image_url ?? undefined,
     price: Number(row.effective_price),
@@ -83,13 +105,15 @@ async function getDeals(): Promise<{ deals: Deal[]; source: "demo" | "supabase" 
       typeof row.competitor_price === "number" ? Number(row.competitor_price) : undefined,
   }));
 
-  return { deals, source: "supabase" };
+  const categoryTree = buildCategoryTree((catsResult.data ?? []) as SupabaseCategoryRow[]);
+
+  return { deals, categoryTree, source: "supabase" };
 }
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { deals, source } = await getDeals();
+  const { deals, categoryTree, source } = await getDeals();
 
   return (
     <div className="flex flex-1 flex-col bg-page font-sans">
@@ -128,7 +152,7 @@ export default async function Home() {
       </header>
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-6">
-        <DealsGrid deals={deals} source={source} />
+        <DealsGrid deals={deals} source={source} categoryTree={categoryTree} />
       </main>
     </div>
   );

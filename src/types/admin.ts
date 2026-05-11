@@ -3,7 +3,8 @@ export type ProductRow = {
   barcode: string | null;
   name: string;
   supplier: string | null;
-  category: string | null;
+  category: string | null;       // legacy free-text, kept for display
+  category_id: string | null;   // FK to categories.id
   image_url: string | null;
   competitor_name: string | null;
   competitor_price: number | null;
@@ -42,7 +43,7 @@ export type ProductFormState = {
   barcode: string;
   name: string;
   supplier: string;
-  category: string;
+  categoryId: string;  // UUID from categories.id
   imageUrl: string;
   competitorName: string;
   competitorPrice: string;
@@ -63,7 +64,7 @@ export const emptyForm: ProductFormState = {
   barcode: "",
   name: "",
   supplier: "",
-  category: "",
+  categoryId: "",
   imageUrl: "",
   competitorName: "",
   competitorPrice: "",

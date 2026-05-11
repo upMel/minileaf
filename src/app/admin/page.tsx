@@ -47,12 +47,17 @@ export default function AdminPage() {
     void loadCategories();
   }, [loadCategories]);
 
-  // Derive available categories from loaded products
-  const availableCategories = useMemo(() => {
-    const cats = new Set<string>();
-    products.forEach((p) => { if (p.category) cats.add(p.category); });
-    return Array.from(cats).sort();
-  }, [products]);
+  // Derive category tree for SearchBar grouped dropdown
+  const categoryTree = useMemo(() => {
+    const roots = dbCategories.filter((c) => c.parent_id === null);
+    return roots.map((root) => ({
+      id: root.id,
+      name: root.name,
+      children: dbCategories
+        .filter((c) => c.parent_id === root.id)
+        .map((sub) => ({ id: sub.id, name: sub.name, children: [] })),
+    }));
+  }, [dbCategories]);
 
   // Apply filters locally
   const filteredProducts = useMemo(() => {
@@ -61,7 +66,7 @@ export default function AdminPage() {
     const max = filters.maxPrice !== "" ? parseFloat(filters.maxPrice) : null;
     return products.filter((p) => {
       if (q && !p.name.toLowerCase().includes(q) && !p.category?.toLowerCase().includes(q)) return false;
-      if (filters.categories.length > 0 && !filters.categories.includes(p.category ?? "")) return false;
+      if (filters.categories.length > 0 && !filters.categories.includes(p.category_id ?? "")) return false;
       if (filters.hasPromoOnly && !promotionsByProductId[p.id]?.is_active) return false;
       if (min !== null && !isNaN(min) && p.price < min) return false;
       if (max !== null && !isNaN(max) && p.price > max) return false;
@@ -179,11 +184,28 @@ export default function AdminPage() {
               categories={dbCategories}
             />
 
-            <CategoryManager
-              supabase={supabase!}
-              categories={dbCategories}
-              onRefresh={() => void loadCategories()}
-            />
+            <details className="group rounded-2xl border border-black/10 bg-white dark:border-white/15 dark:bg-black">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-base font-semibold text-black outline-none hover:bg-black/[.03] focus-visible:ring-2 focus-visible:ring-black/10 dark:text-zinc-50 dark:hover:bg-white/5 dark:focus-visible:ring-white/10">
+                <span>Categories</span>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  className="h-5 w-5 shrink-0 text-zinc-600 transition-transform duration-200 group-open:rotate-180 dark:text-zinc-400"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </summary>
+              <CategoryManager
+                supabase={supabase!}
+                categories={dbCategories}
+                onRefresh={() => void loadCategories()}
+              />
+            </details>
 
             <ProductList
               products={filteredProducts}
@@ -198,7 +220,7 @@ export default function AdminPage() {
               searchBar={
                 <SearchBar
                   filters={filters}
-                  availableCategories={availableCategories}
+                  categoryTree={categoryTree}
                   onChange={setFilters}
                   showStatus
                   placeholder="Search products…"

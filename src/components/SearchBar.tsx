@@ -4,24 +4,33 @@ import { useRef, useState, useEffect } from "react";
 
 import type { SearchFilters, StatusFilter } from "@/types/search";
 
+export type CategoryNode = {
+  id: string;
+  name: string;
+  children: CategoryNode[];
+};
+
 type Props = {
   filters: SearchFilters;
-  availableCategories: string[];
+  /** Hierarchical category tree for the grouped dropdown */
+  categoryTree: CategoryNode[];
   onChange: (filters: SearchFilters) => void;
   /** Show Active / Inactive status toggle — admin only */
   showStatus?: boolean;
   placeholder?: string;
 };
 
-// --- Categories multi-select dropdown ---
+// --- Categories multi-select dropdown (grouped) ---
 function CategoryDropdown({
-  available,
+  tree,
   selected,
   onToggle,
+  onToggleRoot,
 }: {
-  available: string[];
-  selected: string[];
-  onToggle: (cat: string) => void;
+  tree: CategoryNode[];
+  selected: string[];  // UUIDs
+  onToggle: (id: string) => void;
+  onToggleRoot: (ids: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -34,14 +43,17 @@ function CategoryDropdown({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Count total leaf selections for label
+  const totalLeaves = tree.flatMap((r) => (r.children.length > 0 ? r.children : [r]));
+  const selCount = selected.length;
   const label =
-    selected.length === 0
+    selCount === 0
       ? "Categories"
-      : selected.length === 1
-        ? selected[0]
-        : `${selected.length} categories`;
+      : selCount === 1
+        ? (totalLeaves.find((n) => n.id === selected[0])?.name ?? "1 category")
+        : `${selCount} categories`;
 
-  const hasSelection = selected.length > 0;
+  const hasSelection = selCount > 0;
 
   return (
     <div ref={ref} className="relative shrink-0">
@@ -72,60 +84,95 @@ function CategoryDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 min-w-[180px] rounded-xl border border-black/10 bg-white py-1 shadow-lg dark:border-white/15 dark:bg-zinc-900">
-          {available.length === 0 ? (
+        <div className="absolute left-0 top-full z-50 mt-1.5 min-w-[240px] rounded-xl border border-black/10 bg-white shadow-lg dark:border-white/15 dark:bg-zinc-900">
+          {/* Scrollable list area */}
+          <div className="max-h-80 overflow-y-auto py-1">
+          {tree.length === 0 ? (
             <span className="block px-3 py-2 text-xs text-zinc-400">No categories</span>
           ) : (
-            available.map((cat) => {
-              const checked = selected.includes(cat);
+            tree.map((root) => {
+              const leaves = root.children.length > 0 ? root.children : [root];
+              const leafIds = leaves.map((l) => l.id);
+              const allSelected = leafIds.every((id) => selected.includes(id));
+              const someSelected = leafIds.some((id) => selected.includes(id));
+
               return (
-                <label
-                  key={cat}
-                  className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/5"
-                >
-                  {/* Custom checkbox using CSS var accent */}
-                  <span
-                    className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors"
-                    style={checked
-                      ? { backgroundColor: "var(--accent)", borderColor: "var(--accent)" }
-                      : { borderColor: "rgba(0,0,0,0.2)", backgroundColor: "transparent" }
-                    }
+                <div key={root.id}>
+                  {/* Root row — clicking toggles all its leaves */}
+                  <button
+                    type="button"
+                    onClick={() => onToggleRoot(leafIds)}
+                    className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left hover:bg-zinc-50 dark:hover:bg-white/5"
                   >
-                    {checked && (
-                      <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="var(--accent-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="2 6 5 9 10 3" />
-                      </svg>
-                    )}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => onToggle(cat)}
-                    className="sr-only"
-                  />
-                  {cat}
-                </label>
+                    <span
+                      className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors"
+                      style={
+                        allSelected
+                          ? { backgroundColor: "var(--accent)", borderColor: "var(--accent)" }
+                          : someSelected
+                            ? { backgroundColor: "var(--accent)/40", borderColor: "var(--accent)" }
+                            : { borderColor: "rgba(0,0,0,0.2)", backgroundColor: "transparent" }
+                      }
+                    >
+                      {(allSelected || someSelected) && (
+                        <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="var(--accent-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points={allSelected ? "2 6 5 9 10 3" : "2 6 10 6"} />
+                        </svg>
+                      )}
+                    </span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                      {root.name}
+                    </span>
+                  </button>
+
+                  {/* Subcategory rows */}
+                  {root.children.map((sub) => {
+                    const checked = selected.includes(sub.id);
+                    return (
+                      <label
+                        key={sub.id}
+                        className="flex cursor-pointer items-center gap-2.5 pl-7 pr-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/5"
+                      >
+                        <span
+                          className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors"
+                          style={checked
+                            ? { backgroundColor: "var(--accent)", borderColor: "var(--accent)" }
+                            : { borderColor: "rgba(0,0,0,0.2)", backgroundColor: "transparent" }
+                          }
+                        >
+                          {checked && (
+                            <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="var(--accent-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="2 6 5 9 10 3" />
+                            </svg>
+                          )}
+                        </span>
+                        <input type="checkbox" checked={checked} onChange={() => onToggle(sub.id)} className="sr-only" />
+                        {sub.name}
+                      </label>
+                    );
+                  })}
+                </div>
               );
             })
           )}
-          {selected.length > 0 && (
-            <>
-              <div className="my-1 border-t border-black/10 dark:border-white/10" />
+          </div>
+          {/* Pinned footer — always visible, outside scroll area */}
+          {hasSelection && (
+            <div className="border-t border-black/10 dark:border-white/10">
               <button
                 type="button"
-                onClick={() => selected.forEach(onToggle)}
+                onClick={() => onToggleRoot([])}
                 className="w-full px-3 py-1.5 text-left text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
               >
                 Clear all
               </button>
-            </>
+            </div>
           )}
         </div>
       )}
     </div>
   );
 }
-
 // --- Status toggle (admin only) ---
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -169,7 +216,7 @@ function StatusToggle({
 // --- Main SearchBar ---
 export default function SearchBar({
   filters,
-  availableCategories,
+  categoryTree,
   onChange,
   showStatus = false,
   placeholder = "Search products…",
@@ -217,16 +264,30 @@ export default function SearchBar({
 
       {/* Categories multiselect */}
       <CategoryDropdown
-        available={availableCategories}
+        tree={categoryTree}
         selected={filters.categories}
-        onToggle={(cat) =>
+        onToggle={(id) =>
           onChange({
             ...filters,
-            categories: filters.categories.includes(cat)
-              ? filters.categories.filter((c) => c !== cat)
-              : [...filters.categories, cat],
+            categories: filters.categories.includes(id)
+              ? filters.categories.filter((c) => c !== id)
+              : [...filters.categories, id],
           })
         }
+        onToggleRoot={(ids) => {
+          if (ids.length === 0) {
+            // clear all
+            onChange({ ...filters, categories: [] });
+            return;
+          }
+          const allSelected = ids.every((id) => filters.categories.includes(id));
+          if (allSelected) {
+            onChange({ ...filters, categories: filters.categories.filter((c) => !ids.includes(c)) });
+          } else {
+            const merged = Array.from(new Set([...filters.categories, ...ids]));
+            onChange({ ...filters, categories: merged });
+          }
+        }}
       />
 
       {/* On sale toggle */}

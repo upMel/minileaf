@@ -7,7 +7,8 @@ export interface CompetitorPrice {
 
 export interface CompetitorLookupResult {
   name: string | null;
-  category: string | null;
+  category: string | null;      // root/parent category name
+  sub_category: string | null;  // subcategory name (more specific)
   image_url: string | null;
   prices: CompetitorPrice[];
 }
@@ -33,7 +34,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const result = (data as any)?.context?.MAPP_PRODUCTS?.result;
   if (!result) {
-    return Response.json({ name: null, category: null, image_url: null, prices: [] } satisfies CompetitorLookupResult);
+    return Response.json({ name: null, category: null, sub_category: null, image_url: null, prices: [] } satisfies CompetitorLookupResult);
   }
 
   const merchants: Array<{ merchant_uuid: number; display_name: string }> = result.merchants ?? [];
@@ -41,22 +42,25 @@ export async function GET(request: Request): Promise<Response> {
     merchants.map((m) => [m.merchant_uuid, m.display_name]),
   );
 
-  // Build a flat UUID→top-level-name map for categories
+  // Build flat maps: UUID → root name, UUID → sub name
   const categoryMap = new Map<number, string>();
+  const subCategoryMap = new Map<number, string>();
   for (const cat of (result.categories as any[]) ?? []) {
     categoryMap.set(cat.uuid as number, cat.name as string);
     for (const sub of (cat.sub_categories as any[]) ?? []) {
-      categoryMap.set(sub.uuid as number, cat.name as string); // map sub → parent name
+      categoryMap.set(sub.uuid as number, cat.name as string);      // sub → parent name
+      subCategoryMap.set(sub.uuid as number, sub.name as string);   // sub → sub name
     }
   }
 
   const product = (result.products as any[]).find((p) => p.barcode === barcode);
   if (!product) {
-    return Response.json({ name: null, category: null, image_url: null, prices: [] } satisfies CompetitorLookupResult);
+    return Response.json({ name: null, category: null, sub_category: null, image_url: null, prices: [] } satisfies CompetitorLookupResult);
   }
 
   const categoryIds: number[] = Array.isArray(product.category) ? product.category : [];
   const category = categoryIds.map((id) => categoryMap.get(id)).find(Boolean) ?? null;
+  const sub_category = categoryIds.map((id) => subCategoryMap.get(id)).find(Boolean) ?? null;
 
   const imgBase: string = (result.img_base_url as string) ?? "";
   const image_url = product.image
@@ -70,5 +74,5 @@ export async function GET(request: Request): Promise<Response> {
     }))
     .sort((a, b) => a.price - b.price);
 
-  return Response.json({ name: product.name, category, image_url, prices } satisfies CompetitorLookupResult);
+  return Response.json({ name: product.name, category, sub_category, image_url, prices } satisfies CompetitorLookupResult);
 }
