@@ -181,8 +181,8 @@ export default function DealsGrid({ deals, source, categoryTree = [] }: Props) {
         </div>
       ) : view === "leaflet" ? (
 
-        /* ── Leaflet view: dense full-width grid ── */
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+        /* ── Leaflet view: dense full-width grid (mobile only — md+ uses FlierGrid) ── */
+        <section className="grid grid-cols-2 gap-3 md:hidden sm:grid-cols-3">
           {filtered.map((deal) => (
             <LeafletCard key={deal.id} deal={deal} />
           ))}
