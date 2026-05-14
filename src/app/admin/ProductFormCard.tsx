@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import DateRangePickerInput from "@/components/inputs/DateRangePickerInput";
+import DateRangePickerInput from "@/components/inputs/DateRangePickerInputV2";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Checkbox from "@/components/ui/Checkbox";
@@ -23,6 +23,8 @@ type Props = {
   isSaving: boolean;
   saveError: string | null;
   categories: CategoryRow[];
+  /** When true, renders without the Card wrapper (used inside the drawer) */
+  inDrawer?: boolean;
 };
 
 export default function ProductFormCard({
@@ -33,6 +35,7 @@ export default function ProductFormCard({
   isSaving,
   saveError,
   categories,
+  inDrawer = false,
 }: Props) {
   const set = onChange;
 
@@ -62,15 +65,17 @@ export default function ProductFormCard({
   }
 
   return (
-    <Card>
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-black dark:text-zinc-50">Products</h2>
-        <Button type="button" onClick={onNew}>
-          New
-        </Button>
-      </div>
+    <Card style={inDrawer ? { border: "none", borderRadius: 0, background: "transparent", boxShadow: "none", padding: 0 } : undefined}>
+      {!inDrawer && (
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-black dark:text-zinc-50">Products</h2>
+          <Button type="button" onClick={onNew}>
+            New
+          </Button>
+        </div>
+      )}
 
-      <form onSubmit={onSubmit} className="mt-4">
+      <form onSubmit={onSubmit} className={inDrawer ? "p-4" : "mt-4"}>
         <div className="grid grid-cols-1 gap-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Barcode">
@@ -200,6 +205,7 @@ export default function ProductFormCard({
             </summary>
 
             <div className="px-3 pb-3">
+              {/* Row 1: Type + conditional value field */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Type">
                   <SelectInput
@@ -212,35 +218,37 @@ export default function ProductFormCard({
                     <option value="BOGO">BOGO (1+1)</option>
                   </SelectInput>
                 </Field>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                    Date window
-                  </label>
-                  <DateRangePickerInput
-                    startValue={form.promoStartsAt}
-                    endValue={form.promoEndsAt}
-                    onStartChange={(v) => set({ promoStartsAt: v })}
-                    onEndChange={(v) => set({ promoEndsAt: v })}
-                    disabled={form.promotionMode === "NONE"}
-                  />
-                </div>
+                {form.promotionMode === "PERCENT" ? (
+                  <Field label="Percent off">
+                    <PercentInput
+                      value={form.percentOff}
+                      onChange={(v) => set({ percentOff: v })}
+                    />
+                  </Field>
+                ) : form.promotionMode === "PRICE" ? (
+                  <Field label="Promo price">
+                    <MoneyInput
+                      value={form.promoPrice}
+                      onChange={(v) => set({ promoPrice: v })}
+                    />
+                  </Field>
+                ) : (
+                  <div />
+                )}
               </div>
 
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="Percent off">
-                  <PercentInput
-                    value={form.percentOff}
-                    onChange={(v) => set({ percentOff: v })}
-                    disabled={form.promotionMode !== "PERCENT"}
-                  />
-                </Field>
-                <Field label="Promo price">
-                  <MoneyInput
-                    value={form.promoPrice}
-                    onChange={(v) => set({ promoPrice: v })}
-                    disabled={form.promotionMode !== "PRICE"}
-                  />
-                </Field>
+              {/* Row 2: Date window — full width for space */}
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  Date window
+                </label>
+                <DateRangePickerInput
+                  startValue={form.promoStartsAt}
+                  endValue={form.promoEndsAt}
+                  onStartChange={(v) => set({ promoStartsAt: v })}
+                  onEndChange={(v) => set({ promoEndsAt: v })}
+                  disabled={form.promotionMode === "NONE"}
+                />
               </div>
 
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
