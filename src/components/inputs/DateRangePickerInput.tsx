@@ -12,6 +12,7 @@ type Props = {
 
 type InputWithDatepicker = HTMLInputElement & {
   datepicker?: {
+    show?: () => void;
     hide?: () => void;
     pickerElement?: HTMLElement;
   };
@@ -74,8 +75,18 @@ export default function DateRangePickerInput({
     const syncStart = () => onStartChange(startEl.value);
     const syncEnd = () => onEndChange(endEl.value);
 
+    // After picking a start date, auto-advance to the end calendar
+    const autoAdvanceToEnd = () => {
+      setTimeout(() => {
+        endEl.datepicker?.show?.();
+      }, 80);
+    };
+
     startEl.addEventListener("changeDate", syncStart as EventListener);
     endEl.addEventListener("changeDate", syncEnd as EventListener);
+
+    // Auto-advance: after start is picked, open end calendar
+    startEl.addEventListener("changeDate", autoAdvanceToEnd as EventListener);
 
     // Ensure we never show two calendars at once
     startEl.addEventListener("focus", openStartOnly);
@@ -92,6 +103,7 @@ export default function DateRangePickerInput({
     return () => {
       cancelled = true;
       startEl.removeEventListener("changeDate", syncStart as EventListener);
+      startEl.removeEventListener("changeDate", autoAdvanceToEnd as EventListener);
       endEl.removeEventListener("changeDate", syncEnd as EventListener);
       startEl.removeEventListener("focus", openStartOnly);
       startEl.removeEventListener("click", openStartOnly);
