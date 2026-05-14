@@ -6,8 +6,6 @@ type Props = {
   required?: boolean;
 };
 
-const noop = () => {};
-
 export default function MoneyInput({
   value,
   onChange,
@@ -27,28 +25,8 @@ export default function MoneyInput({
         disabled={disabled}
         required={required}
       />
-      <div className="grid shrink-0 grid-cols-1 focus-within:relative">
-        <select
-          aria-label="Currency"
-          className="col-start-1 row-start-1 w-full appearance-none rounded-xl bg-transparent py-2 pr-8 pl-3 text-sm font-medium text-zinc-700 outline-none disabled:opacity-60 dark:text-zinc-200"
-          value="EUR"
-          onChange={noop}
-          disabled={disabled}
-        >
-          <option value="EUR">EUR</option>
-        </select>
-        <svg
-          viewBox="0 0 16 16"
-          fill="currentColor"
-          aria-hidden="true"
-          className="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-zinc-500"
-        >
-          <path
-            d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z"
-            clipRule="evenodd"
-            fillRule="evenodd"
-          />
-        </svg>
+      <div className="shrink-0 select-none rounded-r-xl border-l border-black/10 bg-zinc-50 px-3 py-2 text-xs font-semibold text-zinc-500 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400">
+        EUR
       </div>
     </div>
   );
