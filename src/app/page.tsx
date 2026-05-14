@@ -7,6 +7,7 @@ import ViewDropdown from "@/components/ViewDropdown";
 import DealsGrid from "@/components/DealsGrid";
 import type { Deal } from "@/components/DealsGrid";
 import type { CategoryNode } from "@/components/SearchBar";
+import { ViewProvider } from "@/context/ViewContext";
 
 type SupabaseDealRow = {
   product_id: string;
@@ -116,11 +117,12 @@ export default async function Home() {
   const { deals, categoryTree, source } = await getDeals();
 
   return (
+    <ViewProvider>
     <div className="flex flex-1 flex-col bg-page font-sans">
       <header className="sticky top-0 z-40 border-b border-black/10 bg-white dark:border-white/10 dark:bg-zinc-950">
         <div className="mx-auto flex w-full items-center justify-between px-4 py-3"> 
           {/* used to be max-w-5xl but i removed it to make the header full-bleed like the rest of the page */}
-          {/* Left: logo + title + view picker */}
+          {/* Left: logo + title + view picker inline */}
           <div className="flex items-center gap-3">
             <Image
               src="/miniLeaf.png"
@@ -130,12 +132,10 @@ export default async function Home() {
               className="rounded-xl"
               priority
             />
-            <div className="flex flex-col">
-              <h1 className="text-base font-semibold leading-tight tracking-tight text-black dark:text-zinc-50">
-                Today&apos;s deals
-              </h1>
-              <ViewDropdown />
-            </div>
+            <h1 className="text-base font-semibold leading-tight tracking-tight text-black dark:text-zinc-50">
+              Today&apos;s deals
+            </h1>
+            <ViewDropdown />
           </div>
 
           {/* Right: theme toggle + owner link */}
@@ -151,9 +151,10 @@ export default async function Home() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-6">
+      <main className="mx-auto flex w-full flex-1 flex-col gap-4 px-4 py-6">
         <DealsGrid deals={deals} source={source} categoryTree={categoryTree} />
       </main>
     </div>
+    </ViewProvider>
   );
 }
