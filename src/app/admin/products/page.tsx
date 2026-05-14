@@ -1,0 +1,207 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import SearchBar from "@/components/SearchBar";
+import { useAdminAuthContext } from "@/context/AdminAuthContext";
+import { useProducts } from "@/hooks/useProducts";
+import { useProductForm } from "@/hooks/useProductForm";
+import { useSearchFilters } from "@/hooks/useSearchFilters";
+import { fetchCategories } from "@/services/categories";
+import type { CategoryRow, ProductRow } from "@/types/admin";
+
+import DeleteModal from "../DeleteModal";
+import ProductFormCard from "../ProductFormCard";
+import ProductList from "../ProductList";
+
+export default function ProductsPage() {
+  const { supabase, adminState } = useAdminAuthContext();
+  const isAuthorized = adminState.status === "authorized";
+
+  const { products, promotionsByProductId, isLoading, error, refresh, toggleActive, deactivate, remove } =
+    useProducts(supabase, isAuthorized);
+
+  const { form, isSaving, saveError, setField, startNew, startEdit, save } = useProductForm(
+    supabase,
+    refresh
+  );
+
+  const { filters, setFilters } = useSearchFilters();
+
+  // Drawer state — null = closed, "new" or "edit" = open
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  function openNew() {
+    startNew();
+    setDrawerOpen(true);
+  }
+
+  function openEdit(p: ProductRow) {
+    void startEdit(p);
+    setDrawerOpen(true);
+  }
+
+  function closeDrawer() {
+    setDrawerOpen(false);
+  }
+
+  // Categories
+  const [dbCategories, setDbCategories] = useState<CategoryRow[]>([]);
+  const loadCategories = useCallback(async () => {
+    if (!supabase || !isAuthorized) return;
+    const { data } = await fetchCategories(supabase);
+    setDbCategories(data);
+  }, [supabase, isAuthorized]);
+
+  useEffect(() => { void loadCategories(); }, [loadCategories]);
+
+  const categoryTree = useMemo(() => {
+    const roots = dbCategories.filter((c) => c.parent_id === null);
+    return roots.map((root) => ({
+      id: root.id,
+      name: root.name,
+      children: dbCategories
+        .filter((c) => c.parent_id === root.id)
+        .map((sub) => ({ id: sub.id, name: sub.name, children: [] })),
+    }));
+  }, [dbCategories]);
+
+  const activeCategoryTree = useMemo(() => {
+    const usedIds = new Set(products.map((p) => p.category_id).filter(Boolean) as string[]);
+    if (usedIds.size === 0) return categoryTree;
+    return categoryTree
+      .map((root) => {
+        const activeChildren = root.children.filter((sub) => usedIds.has(sub.id));
+        if (usedIds.has(root.id) || activeChildren.length > 0)
+          return { ...root, children: activeChildren };
+        return null;
+      })
+      .filter((n): n is NonNullable<typeof n> => n !== null);
+  }, [categoryTree, products]);
+
+  const filteredProducts = useMemo(() => {
+    const q = filters.query.trim().toLowerCase();
+    const min = filters.minPrice !== "" ? parseFloat(filters.minPrice) : null;
+    const max = filters.maxPrice !== "" ? parseFloat(filters.maxPrice) : null;
+    return products.filter((p) => {
+      if (q && !p.name.toLowerCase().includes(q) && !p.category?.toLowerCase().includes(q)) return false;
+      if (filters.categories.length > 0 && !filters.categories.includes(p.category_id ?? "")) return false;
+      if (filters.hasPromoOnly && !promotionsByProductId[p.id]?.is_active) return false;
+      if (min !== null && !isNaN(min) && p.price < min) return false;
+      if (max !== null && !isNaN(max) && p.price > max) return false;
+      if (filters.status === "active" && !p.is_active) return false;
+      if (filters.status === "inactive" && p.is_active) return false;
+      return true;
+    });
+  }, [products, promotionsByProductId, filters]);
+
+  // Delete modal
+  const [deleteModalProduct, setDeleteModalProduct] = useState<ProductRow | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+  const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
+
+  function openDeleteModal(p: ProductRow) {
+    setDeleteModalError(null);
+    setDeleteModalProduct(p);
+  }
+
+  async function onDeactivateFromModal() {
+    if (!deleteModalProduct) return;
+    setIsDeletingProduct(true);
+    const { error: err } = await deactivate(deleteModalProduct.id);
+    if (err) setDeleteModalError(err);
+    else setDeleteModalProduct(null);
+    setIsDeletingProduct(false);
+  }
+
+  async function onConfirmDeleteFromModal() {
+    if (!deleteModalProduct) return;
+    setIsDeletingProduct(true);
+    const { error: err } = await remove(deleteModalProduct.id);
+    if (err) setDeleteModalError(err);
+    else setDeleteModalProduct(null);
+    setIsDeletingProduct(false);
+  }
+
+  return (
+    <div className="relative flex h-full">
+      {/* Main content */}
+      <div className={`flex-1 p-6 transition-all duration-300 ${drawerOpen ? "mr-[440px]" : ""}`}>
+        <ProductList
+          products={filteredProducts}
+          promotionsByProductId={promotionsByProductId}
+          isLoading={isLoading}
+          error={error}
+          onRefresh={() => void refresh()}
+          onEdit={openEdit}
+          onToggleActive={(p) => void toggleActive(p)}
+          onDelete={openDeleteModal}
+          totalCount={products.length}
+          onNew={openNew}
+          searchBar={
+            <SearchBar
+              filters={filters}
+              categoryTree={activeCategoryTree}
+              onChange={setFilters}
+              showStatus
+              placeholder="Search products…"
+            />
+          }
+        />
+      </div>
+
+      {/* Slide-in drawer */}
+      {drawerOpen && (
+        <>
+          {/* Backdrop (subtle) */}
+          <div
+            className="fixed inset-0 z-20 bg-black/10 dark:bg-black/30"
+            onClick={closeDrawer}
+          />
+          <aside className="fixed right-0 top-0 z-30 flex h-full w-[440px] flex-col border-l border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+            {/* Drawer header */}
+            <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
+              <span className="text-sm font-semibold text-black dark:text-zinc-50">
+                {form.id ? "Edit product" : "New product"}
+              </span>
+              <button
+                type="button"
+                onClick={closeDrawer}
+                className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+                aria-label="Close"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            {/* Drawer body — scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              <ProductFormCard
+                form={form}
+                onChange={setField}
+                onSubmit={async (e) => { await save(e); closeDrawer(); }}
+                onNew={() => { startNew(); }}
+                isSaving={isSaving}
+                saveError={saveError}
+                categories={dbCategories}
+                inDrawer
+              />
+            </div>
+          </aside>
+        </>
+      )}
+
+      {deleteModalProduct && (
+        <DeleteModal
+          product={deleteModalProduct}
+          isDeleting={isDeletingProduct}
+          error={deleteModalError}
+          onCancel={() => setDeleteModalProduct(null)}
+          onDeactivate={() => void onDeactivateFromModal()}
+          onConfirmDelete={() => void onConfirmDeleteFromModal()}
+        />
+      )}
+    </div>
+  );
+}
