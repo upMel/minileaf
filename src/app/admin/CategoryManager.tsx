@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { deleteCategory, importCategories, insertCategory, renameCategory, clearAllCategories } from "@/services/categories";
+import { deleteCategory, importCategories, insertCategory, renameCategory, clearAllCategories, relinkProductCategories } from "@/services/categories";
 import type { CompetitorCategory } from "@/app/api/competitor-categories/route";
 import type { CategoryRow } from "@/types/admin";
 import Button from "@/components/ui/Button";
@@ -149,7 +149,10 @@ export default function CategoryManager({ supabase, categories, onRefresh }: Pro
       }
     }
 
-    setSyncMessage(`Synced ${topEntries.length} categories and ${subEntries.length} subcategories.`);
+    // Relink products whose category text name matches a newly synced category
+    const { linked } = await relinkProductCategories(supabase);
+    const relinkedNote = linked > 0 ? ` Re-linked ${linked} product${linked !== 1 ? "s" : ""}.` : "";
+    setSyncMessage(`Synced ${topEntries.length} categories and ${subEntries.length} subcategories.${relinkedNote}`);
     onRefresh();
     setIsSyncing(false);
   }

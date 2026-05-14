@@ -70,6 +70,47 @@ export async function importCategories(
 }
 
 /**
+ * After a category resync, match products that have a `category` text name but
+ * no `category_id` FK. Updates them by matching the text name to a category row.
+ */
+export async function relinkProductCategories(supabase: Client): Promise<{ linked: number; error: string | null }> {
+  // Fetch products that lost their category_id link
+  const { data: orphans, error: pErr } = await supabase
+    .from("products")
+    .select("id,category")
+    .is("category_id", null)
+    .not("category", "is", null);
+  if (pErr) return { linked: 0, error: pErr.message };
+  if (!orphans || orphans.length === 0) return { linked: 0, error: null };
+
+  // Fetch all categories
+  const { data: cats, error: cErr } = await supabase.from("categories").select("id,name");
+  if (cErr) return { linked: 0, error: cErr.message };
+
+  const nameToId = new Map<string, string>(
+    (cats ?? []).map((c: { id: string; name: string }) => [c.name.toLowerCase(), c.id]),
+  );
+
+  const updates: Array<{ id: string; category_id: string }> = [];
+  for (const p of orphans as Array<{ id: string; category: string | null }>) {
+    if (!p.category) continue;
+    const catId = nameToId.get(p.category.toLowerCase());
+    if (catId) updates.push({ id: p.id, category_id: catId });
+  }
+
+  if (updates.length === 0) return { linked: 0, error: null };
+
+  // Batch update — Supabase browser client has no multi-row UPDATE, so iterate
+  await Promise.all(
+    updates.map(({ id, category_id }) =>
+      supabase.from("products").update({ category_id }).eq("id", id),
+    ),
+  );
+
+  return { linked: updates.length, error: null };
+}
+
+/**
  * Remove all categories. Nulls out products.category_id first to satisfy the
  * FK RESTRICT constraint, then deletes root categories (cascades to children).
  */

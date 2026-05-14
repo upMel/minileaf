@@ -33,15 +33,30 @@ function CategoryDropdown({
   onToggleRoot: (ids: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
   const ref = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        ref.current?.contains(e.target as Node) ||
+        dropRef.current?.contains(e.target as Node)
+      ) return;
+      setOpen(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 6, left: rect.left });
+    }
+    setOpen((o) => !o);
+  }
 
   // Count total leaf selections for label
   const totalLeaves = tree.flatMap((r) => (r.children.length > 0 ? r.children : [r]));
@@ -56,10 +71,11 @@ function CategoryDropdown({
   const hasSelection = selCount > 0;
 
   return (
-    <div ref={ref} className="relative shrink-0">
+    <div ref={ref} className="shrink-0">
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleToggle}
         className={`flex h-9 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors ${
           hasSelection
             ? "border-transparent font-medium text-white"
@@ -84,7 +100,11 @@ function CategoryDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 min-w-[240px] rounded-xl border border-black/10 bg-white shadow-lg dark:border-white/15 dark:bg-zinc-900">
+        <div
+          ref={dropRef}
+          style={{ position: "fixed", top: dropPos.top, left: dropPos.left, zIndex: 50 }}
+          className="min-w-[240px] rounded-xl border border-black/10 bg-white shadow-lg dark:border-white/15 dark:bg-zinc-900"
+        >
           {/* Scrollable list area */}
           <div className="max-h-80 overflow-y-auto py-1">
           {tree.length === 0 ? (

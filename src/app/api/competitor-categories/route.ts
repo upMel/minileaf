@@ -14,7 +14,7 @@ export interface CompetitorCategory {
 export async function GET(): Promise<Response> {
   let data: unknown;
   try {
-    const res = await fetch(COMPETITOR_S3_URL, { next: { revalidate: 86400 } });
+    const res = await fetch(COMPETITOR_S3_URL, { cache: "no-store" });
     if (!res.ok) {
       return Response.json({ error: "upstream error" }, { status: 502 });
     }
