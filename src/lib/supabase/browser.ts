@@ -1,16 +1,22 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 import { getSupabasePublicEnv } from "./env";
 
+let client: SupabaseClient | undefined;
+
 export function createSupabaseBrowserClient() {
+  if (client) return client;
+
   const env = getSupabasePublicEnv();
   if (!env) return undefined;
 
-  return createClient(env.url, env.anonKey, {
+  client = createClient(env.url, env.anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },
   });
+
+  return client;
 }

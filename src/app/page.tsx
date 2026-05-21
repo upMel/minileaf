@@ -3,29 +3,10 @@ import Image from "next/image";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import ThemeToggle from "@/components/ThemeToggle";
-import ViewTabs from "@/components/ViewTabs";
-import HomeContent from "@/components/HomeContent";
-import type { Deal } from "@/components/DealsGrid";
-import type { CategoryNode } from "@/components/SearchBar";
+import ViewTabs from "@/components/home/ViewTabs";
+import HomeContent from "@/components/home/HomeContent";
+import type { Deal, CategoryNode, SupabaseDealRow, SupabaseCategoryRow } from "@/types/deals";
 import { ViewProvider } from "@/context/ViewContext";
-
-type SupabaseDealRow = {
-  product_id: string;
-  name: string;
-  category: string | null;
-  category_id: string | null;
-  image_url: string | null;
-  competitor_name: string | null;
-  competitor_price: number | null;
-  regular_price: number;
-  effective_price: number;
-  promotion_label: string | null;
-  effective_percent_off: number | null;
-  promotion_type: "PERCENT" | "PRICE" | "BOGO" | null;
-  is_bogo: boolean | null;
-};
-
-type SupabaseCategoryRow = { id: string; name: string; parent_id: string | null };
 
 function buildCategoryTree(rows: SupabaseCategoryRow[]): CategoryNode[] {
   const roots = rows.filter((r) => r.parent_id === null);

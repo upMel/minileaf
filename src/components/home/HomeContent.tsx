@@ -1,10 +1,11 @@
 "use client";
 
 import { useView } from "@/context/ViewContext";
-import LeafletViewer from "@/components/LeafletViewer";
+import LeafletViewer from "@/components/home/LeafletViewer";
 import DealsGrid from "@/components/DealsGrid";
-import type { Deal } from "@/components/DealsGrid";
-import type { CategoryNode } from "@/components/SearchBar";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import type { Deal } from "@/types/deals";
+import type { CategoryNode } from "@/types/deals";
 
 type Props = {
   deals: Deal[];
@@ -16,7 +17,11 @@ export default function HomeContent({ deals, source, categoryTree }: Props) {
   const { view } = useView();
 
   if (view === "leaflet") {
-    return <LeafletViewer deals={deals} />;
+    return (
+      <ErrorBoundary>
+        <LeafletViewer deals={deals} />
+      </ErrorBoundary>
+    );
   }
 
   return (

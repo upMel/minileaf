@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@source "../../node_modules/flowbite-datepicker/dist/**/*.js";
 
 /* Switch Tailwind's dark: variant to class-based so next-themes controls it */
 @variant dark (&:where(.dark, .dark *));
@@ -65,12 +64,6 @@
     color: var(--badge-fg);
   }
 }
-
-/* === DATEPICKER V1 (flowbite) — kept for reference ===
-.datepicker {
-  z-index: 50;
-}
-=== END DATEPICKER V1 === */
 
 :root {
   --background: #ffffff;
@@ -146,109 +139,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* === DATEPICKER V1 (flowbite-datepicker) — not active, kept for reference.
-   Wrapping in a block comment; internal sub-comments stripped to avoid nesting.
-   Original header: Flowbite datepicker overrides — align with app theme.
-.datepicker {
-  z-index: 50;
-}
-.datepicker-picker {
-  border-radius: 1rem !important;
-  border: 1px solid rgba(0,0,0,0.08) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
-  overflow: hidden;
-  font-family: inherit;
-}
-.dark .datepicker-picker {
-  border-color: rgba(255,255,255,0.1) !important;
-  background: #18181b !important;
-}
-.datepicker-header {
-  background: transparent !important;
-  padding: 0.5rem 0.75rem 0 !important;
-  border-bottom: none !important;
-}
-.datepicker-controls .view-switch,
-.datepicker-controls .prev-btn,
-.datepicker-controls .next-btn {
-  border-radius: 0.5rem !important;
-  font-weight: 600 !important;
-  color: inherit !important;
-  background: transparent !important;
-  border: none !important;
-  transition: background 0.15s !important;
-}
-.datepicker-controls .view-switch:hover,
-.datepicker-controls .prev-btn:hover,
-.datepicker-controls .next-btn:hover {
-  background: rgba(0,0,0,0.06) !important;
-}
-.dark .datepicker-controls .view-switch:hover,
-.dark .datepicker-controls .prev-btn:hover,
-.dark .datepicker-controls .next-btn:hover {
-  background: rgba(255,255,255,0.08) !important;
-}
-.datepicker-view .days-of-week .dow {
-  font-size: 0.7rem !important;
-  font-weight: 600 !important;
-  color: #a1a1aa !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.04em !important;
-}
-.datepicker-cell {
-  border-radius: 0.5rem !important;
-  font-size: 0.8125rem !important;
-  transition: background 0.1s, color 0.1s !important;
-}
-.datepicker-cell:hover:not(.selected):not(.range-start):not(.range-end):not(.disabled) {
-  background: rgba(0,0,0,0.06) !important;
-  color: inherit !important;
-}
-.dark .datepicker-cell:hover:not(.selected):not(.range-start):not(.range-end):not(.disabled) {
-  background: rgba(255,255,255,0.08) !important;
-}
-.datepicker-cell.today:not(.selected):not(.range-start):not(.range-end) {
-  background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
-  color: var(--accent) !important;
-  font-weight: 700 !important;
-}
-   Start and end of the selected range:
-  .datepicker-cell.selected,
-.datepicker-cell.selected:hover,
-.datepicker-cell.range-start,
-.datepicker-cell.range-start:hover,
-.datepicker-cell.range-end,
-.datepicker-cell.range-end:hover {
-  background: var(--accent) !important;
-  color: #fff !important;
-  font-weight: 700 !important;
-  border-radius: 0.5rem !important;
-}
-   Cells between start and end:
-  .datepicker-cell.range {
-  background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
-  color: var(--accent) !important;
-  border-radius: 0 !important;
-}
-.datepicker-cell.range-start {
-  border-radius: 0.5rem 0 0 0.5rem !important;
-}
-.datepicker-cell.range-end {
-  border-radius: 0 0.5rem 0.5rem 0 !important;
-}
-   When start == end (single day range):
-  .datepicker-cell.range-start.range-end {
-  border-radius: 0.5rem !important;
-}
-.datepicker-cell.disabled {
-  opacity: 0.3 !important;
-}
-.datepicker-footer {
-  display: none !important;
-}
-=== END DATEPICKER V1 === */
-
-/* ── Datepicker V2 (react-day-picker v10) ── */
+/* ── Datepicker (react-day-picker v10) ── */
 .rdp-v2 .rdp-range-start .rdp-day-btn,
 .rdp-v2 .rdp-range-end .rdp-day-btn,
 .rdp-v2 .rdp-selected:not(.rdp-range-middle) .rdp-day-btn {

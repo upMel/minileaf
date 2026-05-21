@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import DateRangePickerInput from "@/components/inputs/DateRangePickerInputV2";
+import DateRangePickerInput from "@/components/inputs/DateRangePickerInput";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Checkbox from "@/components/ui/Checkbox";

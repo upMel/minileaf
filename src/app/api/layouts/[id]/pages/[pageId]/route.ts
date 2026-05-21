@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import { LAYOUT_TEMPLATES } from "@/lib/layout-templates";
 
 type Params = { params: Promise<{ id: string; pageId: string }> };
 
 export async function PUT(req: NextRequest, { params }: Params) {
   const { pageId } = await params;
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
 
   let body: { template_id?: string; slots?: Record<string, string | null>; page_order?: number };
@@ -43,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { pageId } = await params;
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
 
   const { error } = await supabase.from("layout_pages").delete().eq("id", pageId);

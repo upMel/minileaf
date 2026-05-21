@@ -3,12 +3,9 @@
 import { useRef, useState, useEffect } from "react";
 
 import type { SearchFilters, StatusFilter } from "@/types/search";
+import type { CategoryNode } from "@/types/deals";
 
-export type CategoryNode = {
-  id: string;
-  name: string;
-  children: CategoryNode[];
-};
+export type { CategoryNode } from "@/types/deals";
 
 type Props = {
   filters: SearchFilters;

@@ -3,23 +3,12 @@
 import { useMemo, useState } from "react";
 
 import SearchBar from "@/components/SearchBar";
-import type { CategoryNode } from "@/components/SearchBar";
 import { defaultFilters } from "@/types/search";
 import type { SearchFilters } from "@/types/search";
+import type { Deal, CategoryNode } from "@/types/deals";
 import { useView } from "@/context/ViewContext";
 
-export type Deal = {
-  id: string;
-  name: string;
-  categoryId?: string;  // UUID — used for filtering
-  category?: string;    // display name (legacy fallback)
-  imageUrl?: string;
-  price: number;
-  originalPrice?: number;
-  promoLabel?: string;
-  competitorName?: string;
-  competitorPrice?: number;
-};
+export type { Deal } from "@/types/deals";
 
 function formatEUR(value: number) {
   return new Intl.NumberFormat("el-GR", {

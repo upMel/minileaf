@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Deal } from "@/components/DealsGrid";
+import type { Deal } from "@/types/deals";
 import { LAYOUT_TEMPLATES, slotSpanClasses, type TemplateSlot } from "@/lib/layout-templates";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -33,7 +33,6 @@ function FlierCard({ deal, slot }: { deal: Deal; slot: TemplateSlot }) {
   const isLarge = slot.role === "hero";
   return (
     <article className="group relative h-full w-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/8">
-      {/* Product image — always on white, with padding so it breathes */}
       {deal.imageUrl ? (
         <img
           src={deal.imageUrl}
@@ -133,7 +132,6 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
   const [page, setPage] = useState(0);
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("landscape");
 
-  // Swipe tracking
   const touchStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -165,14 +163,13 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
     else if (delta > 50) prev();
   }
 
-  // Aspect ratio: portrait = 210:297, landscape = 297:210
   const aspectRatio = orientation === "portrait" ? "210 / 297" : "297 / 210";
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center bg-zinc-100 dark:bg-zinc-800/60">
         <div
-          className="animate-pulse rounded-3xl bg-zinc-100 dark:bg-zinc-800"
+          className="animate-pulse rounded-3xl bg-zinc-200 dark:bg-zinc-700"
           style={{ aspectRatio, maxHeight: "calc(100dvh - 72px)", width: "auto", height: "calc(100dvh - 72px)" }}
         />
       </div>
@@ -181,7 +178,7 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
 
   if (!leaflet || totalPages === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center bg-zinc-100 dark:bg-zinc-800/60">
         <div
           className="flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-black/10 text-zinc-400 dark:border-white/10"
           style={{ aspectRatio, maxHeight: "calc(100dvh - 72px)", width: "auto", height: "calc(100dvh - 72px)" }}
@@ -219,7 +216,6 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
 
       {/* A4 frame + side arrows */}
       <div className="flex flex-1 items-center gap-3 w-full justify-center">
-        {/* Left arrow */}
         <button
           type="button"
           onClick={prev}
@@ -232,7 +228,6 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
           </svg>
         </button>
 
-        {/* A4 page */}
         <div
           ref={containerRef}
           onTouchStart={handleTouchStart}
@@ -248,7 +243,6 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
           <LeafletPage page={currentPage} deals={deals} />
         </div>
 
-        {/* Right arrow */}
         <button
           type="button"
           onClick={next}
