@@ -20,9 +20,15 @@
 # production
 /build
 
+# PWA build artifacts (next-pwa)
+/public/sw.js
+/public/workbox-*.js
+
 # misc
 .DS_Store
 *.pem
+*.code-workspace
+dbPass.txt
 
 # debug
 npm-debug.log*

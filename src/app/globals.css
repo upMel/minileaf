@@ -1,8 +1,125 @@
 @import "tailwindcss";
 
+/* Switch Tailwind's dark: variant to class-based so next-themes controls it */
+@variant dark (&:where(.dark, .dark *));
+
+@layer utilities {
+  .rounded-base {
+    @apply rounded-xl;
+  }
+
+  .bg-neutral-primary-medium {
+    @apply bg-white dark:bg-black;
+  }
+
+  .bg-neutral-secondary-medium {
+    @apply bg-zinc-50 dark:bg-white/10;
+  }
+
+  .bg-neutral-tertiary-medium {
+    @apply bg-zinc-100 dark:bg-white/10;
+  }
+
+  .border-default-medium {
+    @apply border-black/10 dark:border-white/15;
+  }
+
+  .text-heading {
+    @apply text-black dark:text-zinc-50;
+  }
+
+  .text-body {
+    @apply text-zinc-600 dark:text-zinc-300;
+  }
+
+  .text-fg-disabled {
+    @apply text-zinc-400 dark:text-zinc-600;
+  }
+
+  .bg-brand {
+    @apply bg-black dark:bg-zinc-50;
+  }
+
+  .bg-brand-strong {
+    @apply bg-black dark:bg-zinc-50;
+  }
+
+  .focus\:ring-brand-medium:focus {
+    @apply ring-2 ring-black/20 dark:ring-white/20;
+  }
+
+  .focus\:ring-neutral-tertiary:focus {
+    @apply ring-2 ring-black/20 dark:ring-white/20;
+  }
+
+  /* Palette-aware utilities */
+  .bg-page {
+    background-color: var(--page-bg);
+  }
+  .text-accent {
+    color: var(--accent);
+  }
+  .bg-badge {
+    background-color: var(--badge-bg);
+    color: var(--badge-fg);
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* ── Palette tokens (default: Market Red) ── */
+  --accent:     #d62828;
+  --accent-fg:  #ffffff;
+  --badge-bg:   #f4a261;
+  --badge-fg:   #1a1a1a;
+  --page-bg:    #fff8f8;
+  --danger:     #b91c1c;
+  --danger-fg:  #ffffff;
+}
+
+/* Fresh Green */
+[data-palette="green"] {
+  --accent:     #2d6a4f;
+  --accent-fg:  #ffffff;
+  --badge-bg:   #e9c46a;
+  --badge-fg:   #1b2f1b;
+  --page-bg:    #f9faf4;
+  --danger:     #dc2626;
+  --danger-fg:  #ffffff;
+}
+
+/* Warm Amber */
+[data-palette="amber"] {
+  --accent:     #e07b00;
+  --accent-fg:  #ffffff;
+  --badge-bg:   #c1121f;
+  --badge-fg:   #ffffff;
+  --page-bg:    #fdf8f0;
+  --danger:     #c1121f;
+  --danger-fg:  #ffffff;
+}
+
+/* Dark mode overrides */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --accent:     #e84040;
+  --page-bg:    #1a0a0a;
+  --danger:     #ef4444;
+}
+
+.dark[data-palette="green"] {
+  --accent:   #52b788;
+  --page-bg:  #0f1a0f;
+  --danger:   #f87171;
+}
+
+.dark[data-palette="amber"] {
+  --accent:   #f59e0b;
+  --page-bg:  #1c1510;
+  --danger:   #f87171;
 }
 
 @theme inline {
@@ -13,14 +130,42 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Handled by .dark class via next-themes; kept for bare body background only */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ── Datepicker (react-day-picker v10) ── */
+.rdp-v2 .rdp-range-start .rdp-day-btn,
+.rdp-v2 .rdp-range-end .rdp-day-btn,
+.rdp-v2 .rdp-selected:not(.rdp-range-middle) .rdp-day-btn {
+  background-color: var(--accent) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+.rdp-v2 .rdp-range-start:not(.rdp-range-end) .rdp-day-btn {
+  border-radius: 0.5rem 0 0 0.5rem !important;
+}
+.rdp-v2 .rdp-range-end:not(.rdp-range-start) .rdp-day-btn {
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+}
+.rdp-v2 .rdp-range-start.rdp-range-end .rdp-day-btn {
+  border-radius: 0.5rem !important;
+}
+.rdp-v2 .rdp-range-middle {
+  background-color: color-mix(in srgb, var(--accent) 12%, transparent) !important;
+  border-radius: 0 !important;
+}
+.rdp-v2 .rdp-range-middle .rdp-day-btn {
+  background-color: transparent !important;
+  color: var(--accent) !important;
+  border-radius: 0 !important;
+}
+.rdp-v2 .rdp-today:not(.rdp-range-start):not(.rdp-range-end):not(.rdp-selected) .rdp-day-btn {
+  font-weight: 700 !important;
+  color: var(--accent) !important;
 }
