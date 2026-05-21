@@ -1,79 +1,54 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 
-type Layout = {
-  id: string;
-  name: string;
-  orientation: "portrait" | "landscape";
-  is_active: boolean;
-  created_at: string;
-};
+import ConfirmModal from "@/app/admin/ConfirmModal";
+import {
+  layoutsQueryOptions,
+  useCreateLayout,
+  useDeleteLayout,
+  useUpdateLayout,
+} from "./_queries";
 
 export default function LayoutsPage() {
-  const [layouts, setLayouts] = useState<Layout[]>([]);
-  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newOrientation, setNewOrientation] = useState<"portrait" | "landscape">("landscape");
-  const [busy, setBusy] = useState<string | null>(null); // layout id being acted on
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/api/layouts");
-    if (res.ok) setLayouts(await res.json());
-    setLoading(false);
-  }, []);
+  const [pendingDeleteLayout, setPendingDeleteLayout] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => { load(); }, [load]);
+  const { data: layouts = [], isLoading: loading } = useQuery(layoutsQueryOptions);
+  const createLayout = useCreateLayout();
+  const updateLayout = useUpdateLayout();
+  const deleteLayout = useDeleteLayout();
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     const name = newName.trim();
     if (!name) return;
-    setBusy("new");
-    const res = await fetch("/api/layouts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, orientation: newOrientation }),
-    });
-    if (res.ok) {
-      setNewName("");
-      setCreating(false);
-      await load();
-    }
-    setBusy(null);
+    await createLayout.mutateAsync({ name, orientation: newOrientation });
+    setNewName("");
+    setCreating(false);
   }
 
   async function handleActivate(id: string) {
-    setBusy(id);
-    await fetch(`/api/layouts/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: true }),
-    });
-    await load();
-    setBusy(null);
+    await updateLayout.mutateAsync({ id, is_active: true });
   }
 
   async function handleDeactivate(id: string) {
-    setBusy(id);
-    await fetch(`/api/layouts/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: false }),
-    });
-    await load();
-    setBusy(null);
+    await updateLayout.mutateAsync({ id, is_active: false });
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete layout "${name}"? This cannot be undone.`)) return;
-    setBusy(id);
-    await fetch(`/api/layouts/${id}`, { method: "DELETE" });
-    await load();
-    setBusy(null);
+  function handleDelete(id: string, name: string) {
+    setPendingDeleteLayout({ id, name });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteLayout) return;
+    await deleteLayout.mutateAsync(pendingDeleteLayout.id);
+    setPendingDeleteLayout(null);
   }
 
   return (
@@ -128,10 +103,10 @@ export default function LayoutsPage() {
             </button>
             <button
               type="submit"
-              disabled={busy === "new"}
+              disabled={createLayout.isPending}
               className="flex-1 rounded-lg bg-[var(--accent)] py-2 text-sm font-medium text-[var(--accent-fg)] hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
-              {busy === "new" ? "Creating…" : "Create"}
+              {createLayout.isPending ? "Creating…" : "Create"}
             </button>
           </div>
         </form>
@@ -165,7 +140,7 @@ export default function LayoutsPage() {
                 {layout.is_active ? (
                   <button
                     type="button"
-                    disabled={busy === layout.id}
+                    disabled={updateLayout.isPending && updateLayout.variables?.id === layout.id}
                     onClick={() => handleDeactivate(layout.id)}
                     className="rounded-lg border border-emerald-500/30 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 dark:bg-emerald-950/40 dark:text-emerald-400"
                   >
@@ -174,7 +149,7 @@ export default function LayoutsPage() {
                 ) : (
                   <button
                     type="button"
-                    disabled={busy === layout.id}
+                    disabled={updateLayout.isPending && updateLayout.variables?.id === layout.id}
                     onClick={() => handleActivate(layout.id)}
                     className="rounded-lg border border-black/10 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-400"
                   >
@@ -191,7 +166,7 @@ export default function LayoutsPage() {
 
                 <button
                   type="button"
-                  disabled={busy === layout.id}
+                  disabled={deleteLayout.isPending && deleteLayout.variables === layout.id}
                   onClick={() => handleDelete(layout.id, layout.name)}
                   className="rounded-lg border border-[var(--danger)]/20 bg-[var(--danger)]/5 px-3 py-1.5 text-xs font-medium text-[var(--danger)] hover:bg-[var(--danger)]/10 disabled:opacity-50"
                 >
@@ -201,6 +176,17 @@ export default function LayoutsPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {pendingDeleteLayout && (
+        <ConfirmModal
+          title={`Delete "${pendingDeleteLayout.name}"?`}
+          description="This action cannot be undone."
+          confirmLabel="Delete layout"
+          isConfirming={deleteLayout.isPending}
+          onCancel={() => setPendingDeleteLayout(null)}
+          onConfirm={() => void confirmDelete()}
+        />
       )}
     </div>
   );

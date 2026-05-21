@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { useAdminAuthContext } from "@/context/AdminAuthContext";
 import { LAYOUT_TEMPLATES, type LayoutTemplate } from "@/lib/layout-templates";
 import type { ProductRow } from "@/types/admin";
@@ -12,22 +13,18 @@ import {
   TemplatePicker,
 } from "@/app/admin/_components/LayoutSlotPicker";
 import type { SlotRole } from "@/lib/layout-templates";
-
-type LayoutPage = {
-  id: string;
-  layout_id: string;
-  page_order: number;
-  template_id: string;
-  slots: Record<string, string | null>;
-};
-
-type Layout = {
-  id: string;
-  name: string;
-  orientation: "portrait" | "landscape";
-  is_active: boolean;
-  pages: LayoutPage[];
-};
+import ConfirmModal from "@/app/admin/ConfirmModal";
+import {
+  layoutDetailQueryOptions,
+  activeProductsQueryOptions,
+  useUpdateLayout,
+  useAddPage,
+  useDeletePage,
+  useSavePage,
+  useMovePage,
+  type LayoutPage,
+  type Layout,
+} from "./_queries";
 
 // ── Single page editor ────────────────────────────────────────────────────────
 function PageEditor({
@@ -209,118 +206,71 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
   const isAuthorized = adminState.status === "authorized";
 
   const [layoutId, setLayoutId] = useState<string | null>(null);
-  const [layout, setLayout] = useState<Layout | null>(null);
-  const [products, setProducts] = useState<ProductRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [nameValue, setNameValue] = useState("");
-  const [nameSaving, setNameSaving] = useState(false);
-  const [orientation, setOrientation] = useState<"portrait" | "landscape">("landscape");
-  const [orientSaving, setOrientSaving] = useState(false);
-  const [addingPage, setAddingPage] = useState(false);
+  // Draft state — null means "use server value"
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [orientDraft, setOrientDraft] = useState<"portrait" | "landscape" | null>(null);
 
-  // Resolve params
+  // Resolve params — setState inside Promise callback, not synchronously in effect body
   useEffect(() => {
     params.then(({ id }) => setLayoutId(id));
   }, [params]);
 
-  const load = useCallback(async (id: string) => {
-    setLoading(true);
-    const [layoutRes, productsRes] = await Promise.all([
-      fetch(`/api/layouts/${id}`),
-      supabase
-        ? supabase.from("products").select("id,name,image_url,is_active").eq("is_active", true).order("name")
-        : Promise.resolve({ data: [], error: null }),
-    ]);
-    if (layoutRes.ok) {
-      const data: Layout = await layoutRes.json();
-      setLayout(data);
-      setNameValue(data.name);
-      setOrientation(data.orientation);
-    }
-    setProducts(((productsRes as { data: ProductRow[] | null }).data ?? []) as ProductRow[]);
-    setLoading(false);
-  }, [supabase]);
+  const { data: layout, isLoading } = useQuery(
+    layoutDetailQueryOptions(layoutId, isAuthorized),
+  );
 
-  useEffect(() => {
-    if (isAuthorized && layoutId) void load(layoutId);
-  }, [isAuthorized, layoutId, load]);
+  const { data: products = [] } = useQuery(
+    activeProductsQueryOptions(supabase, isAuthorized),
+  );
+
+  const [pendingDeletePageId, setPendingDeletePageId] = useState<string | null>(null);
+
+  const updateName = useUpdateLayout(layoutId);
+  const updateOrientation = useUpdateLayout(layoutId);
+  const addPageMutation = useAddPage(layoutId);
+  const deletePageMutation = useDeletePage(layoutId);
+  const savePageMutation = useSavePage(layoutId);
+  const movePageMutation = useMovePage(layoutId);
+
+  // Displayed values: use local draft if the user has typed, otherwise show server value
+  const nameValue = nameDraft ?? layout?.name ?? "";
+  const orientation = orientDraft ?? layout?.orientation ?? "landscape";
 
   async function saveName() {
     if (!layout || !layoutId) return;
     const name = nameValue.trim();
     if (!name || name === layout.name) return;
-    setNameSaving(true);
-    await fetch(`/api/layouts/${layoutId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    setNameSaving(false);
-    await load(layoutId);
+    await updateName.mutateAsync({ name });
+    setNameDraft(null); // clear draft so server value is used after refetch
   }
 
   async function saveOrientation(o: "portrait" | "landscape") {
-    if (!layoutId) return;
-    setOrientation(o);
-    setOrientSaving(true);
-    await fetch(`/api/layouts/${layoutId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orientation: o }),
-    });
-    setOrientSaving(false);
+    setOrientDraft(o);
+    await updateOrientation.mutateAsync({ orientation: o });
   }
 
   async function addPage() {
-    if (!layoutId || !layout) return;
-    setAddingPage(true);
-    await fetch(`/api/layouts/${layoutId}/pages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ template_id: LAYOUT_TEMPLATES[0].id }),
-    });
-    setAddingPage(false);
-    await load(layoutId);
+    if (!layout) return;
+    await addPageMutation.mutateAsync(LAYOUT_TEMPLATES[0].id);
   }
 
-  async function deletePage(pageId: string) {
-    if (!layoutId || !confirm("Delete this page?")) return;
-    await fetch(`/api/layouts/${layoutId}/pages/${pageId}`, { method: "DELETE" });
-    await load(layoutId);
+  function deletePage(pageId: string) {
+    setPendingDeletePageId(pageId);
+  }
+
+  async function confirmDeletePage() {
+    if (!pendingDeletePageId) return;
+    await deletePageMutation.mutateAsync(pendingDeletePageId);
+    setPendingDeletePageId(null);
   }
 
   async function savePage(pageId: string, templateId: string, slots: Record<string, string | null>) {
-    if (!layoutId) return;
-    await fetch(`/api/layouts/${layoutId}/pages/${pageId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ template_id: templateId, slots }),
-    });
+    await savePageMutation.mutateAsync({ pageId, templateId, slots });
   }
 
   async function movePage(pageId: string, direction: "up" | "down") {
-    if (!layout || !layoutId) return;
-    const pages = [...layout.pages].sort((a, b) => a.page_order - b.page_order);
-    const idx = pages.findIndex((p) => p.id === pageId);
-    if (idx === -1) return;
-    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= pages.length) return;
-
-    // Swap page_order values
-    const [aOrder, bOrder] = [pages[idx].page_order, pages[targetIdx].page_order];
-    await Promise.all([
-      fetch(`/api/layouts/${layoutId}/pages/${pages[idx].id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page_order: bOrder }),
-      }),
-      fetch(`/api/layouts/${layoutId}/pages/${pages[targetIdx].id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page_order: aOrder }),
-      }),
-    ]);
-    await load(layoutId);
+    if (!layout) return;
+    await movePageMutation.mutateAsync({ pages: layout.pages, pageId, direction });
   }
 
   if (!isAuthorized) return null;
@@ -340,7 +290,7 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
         All layouts
       </Link>
 
-      {loading ? (
+      {isLoading ? (
         <p className="text-sm text-zinc-400">Loading&hellip;</p>
       ) : !layout ? (
         <p className="text-sm text-red-500">Layout not found.</p>
@@ -357,12 +307,12 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
                 <input
                   type="text"
                   value={nameValue}
-                  onChange={(e) => setNameValue(e.target.value)}
+                  onChange={(e) => setNameDraft(e.target.value)}
                   onBlur={() => void saveName()}
                   onKeyDown={(e) => e.key === "Enter" && void saveName()}
                   className="flex-1 rounded-lg border border-black/10 bg-zinc-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent)_25%,transparent)] dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-100"
                 />
-                {nameSaving && <span className="self-center text-xs text-zinc-400">Saving&hellip;</span>}
+                {updateName.isPending && <span className="self-center text-xs text-zinc-400">Saving&hellip;</span>}
               </div>
             </div>
 
@@ -374,7 +324,7 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
                   <button
                     key={o}
                     type="button"
-                    disabled={orientSaving}
+                    disabled={updateOrientation.isPending}
                     onClick={() => void saveOrientation(o)}
                     className={`flex-1 rounded-lg border py-2 text-sm font-medium capitalize transition-colors disabled:opacity-50 ${orientation === o ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent)]" : "border-black/10 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-400"}`}
                   >
@@ -393,14 +343,14 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
               </h2>
               <button
                 type="button"
-                disabled={addingPage}
+                disabled={addPageMutation.isPending}
                 onClick={() => void addPage()}
                 className="flex items-center gap-1.5 rounded-xl bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-[var(--accent-fg)] hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                {addingPage ? "Adding\u2026" : "Add page"}
+                {addPageMutation.isPending ? "Adding…" : "Add page"}
               </button>
             </div>
 
@@ -436,6 +386,17 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
             </button>
           </div>
         </>
+      )}
+
+      {pendingDeletePageId && (
+        <ConfirmModal
+          title="Delete this page?"
+          description="This action cannot be undone. All slot assignments on this page will be lost."
+          confirmLabel="Delete page"
+          isConfirming={deletePageMutation.isPending}
+          onCancel={() => setPendingDeletePageId(null)}
+          onConfirm={() => void confirmDeletePage()}
+        />
       )}
     </div>
   );

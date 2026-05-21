@@ -1,18 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import SearchBar from "@/components/SearchBar";
 import { useAdminAuthContext } from "@/context/AdminAuthContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useProductForm } from "@/hooks/useProductForm";
 import { useSearchFilters } from "@/hooks/useSearchFilters";
-import { fetchCategories } from "@/services/categories";
-import type { CategoryRow, ProductRow } from "@/types/admin";
+import type { ProductRow } from "@/types/admin";
 
 import DeleteModal from "../DeleteModal";
 import ProductFormCard from "../ProductFormCard";
 import ProductList from "../ProductList";
+import { categoriesQueryOptions } from "./_queries";
 
 export default function ProductsPage() {
   const { supabase, adminState } = useAdminAuthContext();
@@ -46,14 +47,9 @@ export default function ProductsPage() {
   }
 
   // Categories
-  const [dbCategories, setDbCategories] = useState<CategoryRow[]>([]);
-  const loadCategories = useCallback(async () => {
-    if (!supabase || !isAuthorized) return;
-    const { data } = await fetchCategories(supabase);
-    setDbCategories(data);
-  }, [supabase, isAuthorized]);
-
-  useEffect(() => { void loadCategories(); }, [loadCategories]);
+  const { data: dbCategories = [] } = useQuery(
+    categoriesQueryOptions(supabase!, isAuthorized),
+  );
 
   const categoryTree = useMemo(() => {
     const roots = dbCategories.filter((c) => c.parent_id === null);

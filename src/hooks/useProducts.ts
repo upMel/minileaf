@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import {
@@ -12,74 +12,62 @@ import type { ProductRow, PromotionRow } from "@/types/admin";
 type Client = ReturnType<typeof createSupabaseBrowserClient>;
 
 export function useProducts(supabase: Client, enabled: boolean) {
-  const [products, setProducts] = useState<ProductRow[]>([]);
-  const [promotionsByProductId, setPromotionsByProductId] = useState<
-    Record<string, PromotionRow | undefined>
-  >({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!supabase) return;
-    setIsLoading(true);
-    setError(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const { data: rows, error: fetchError } = await fetchProducts(supabase!);
+      if (fetchError) throw new Error(fetchError);
+      const { data: promos } = await fetchPromotionsForProducts(
+        supabase!,
+        rows.map((p) => p.id)
+      );
+      return { products: rows, promotionsByProductId: promos };
+    },
+    enabled: !!supabase && enabled,
+  });
 
-    const { data: rows, error: fetchError } = await fetchProducts(supabase);
-    if (fetchError) {
-      setError(fetchError);
-      setProducts([]);
-      setPromotionsByProductId({});
-      setIsLoading(false);
-      return;
-    }
-
-    setProducts(rows);
-    const { data: promos } = await fetchPromotionsForProducts(
-      supabase,
-      rows.map((p) => p.id)
-    );
-    setPromotionsByProductId(promos);
-    setIsLoading(false);
-  }, [supabase]);
-
-  useEffect(() => {
-    if (!enabled) {
-      setProducts([]);
-      setPromotionsByProductId({});
-      return;
-    }
-    void refresh();
-  }, [enabled, refresh]);
-
-  async function toggleActive(p: ProductRow) {
-    if (!supabase) return;
-    const { error: err } = await toggleProductActive(supabase, p.id, !p.is_active);
-    if (err) setError(err);
-    else await refresh();
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: ["products"] });
   }
 
-  async function deactivate(id: string): Promise<{ error: string | null }> {
-    if (!supabase) return { error: null };
-    const result = await toggleProductActive(supabase, id, false);
-    if (!result.error) await refresh();
-    return result;
-  }
+  const toggleActiveMutation = useMutation({
+    mutationFn: async (p: ProductRow) => {
+      if (!supabase) return;
+      const { error: err } = await toggleProductActive(supabase, p.id, !p.is_active);
+      if (err) throw new Error(err);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+  });
 
-  async function remove(id: string): Promise<{ error: string | null }> {
-    if (!supabase) return { error: null };
-    const result = await deleteProduct(supabase, id);
-    if (!result.error) await refresh();
-    return result;
-  }
+  // Preserve { error: string | null } return shape so existing callers destructure safely.
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string): Promise<{ error: string | null }> => {
+      if (!supabase) return Promise.resolve({ error: null });
+      return toggleProductActive(supabase, id, false);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (id: string): Promise<{ error: string | null }> => {
+      if (!supabase) return Promise.resolve({ error: null });
+      return deleteProduct(supabase, id);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+  });
 
   return {
-    products,
-    promotionsByProductId,
+    products: enabled ? (data?.products ?? []) : [],
+    promotionsByProductId: enabled
+      ? (data?.promotionsByProductId ?? ({} as Record<string, PromotionRow | undefined>))
+      : ({} as Record<string, PromotionRow | undefined>),
     isLoading,
-    error,
+    error: error ? error.message : null,
     refresh,
-    toggleActive,
-    deactivate,
-    remove,
+    toggleActive: (p: ProductRow) => toggleActiveMutation.mutateAsync(p),
+    deactivate: (id: string) => deactivateMutation.mutateAsync(id),
+    remove: (id: string) => removeMutation.mutateAsync(id),
   };
 }

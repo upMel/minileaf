@@ -1,25 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAdminAuthContext } from "@/context/AdminAuthContext";
-import { fetchCategories } from "@/services/categories";
-import type { CategoryRow } from "@/types/admin";
 
 import CategoryManager from "../CategoryManager";
+import { categoriesQueryOptions } from "./_queries";
 
 export default function CategoriesPage() {
   const { supabase, adminState } = useAdminAuthContext();
   const isAuthorized = adminState.status === "authorized";
 
-  const [dbCategories, setDbCategories] = useState<CategoryRow[]>([]);
-  const loadCategories = useCallback(async () => {
-    if (!supabase || !isAuthorized) return;
-    const { data } = await fetchCategories(supabase);
-    setDbCategories(data);
-  }, [supabase, isAuthorized]);
-
-  useEffect(() => { void loadCategories(); }, [loadCategories]);
+  const { data: dbCategories = [] } = useQuery(
+    categoriesQueryOptions(supabase!, isAuthorized),
+  );
 
   return (
     <div className="p-6">
@@ -28,9 +22,9 @@ export default function CategoriesPage() {
         <CategoryManager
           supabase={supabase!}
           categories={dbCategories}
-          onRefresh={() => void loadCategories()}
         />
       </div>
     </div>
   );
 }
+

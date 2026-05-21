@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import { useAdminAuthContext } from "@/context/AdminAuthContext";
 import {
   LAYOUT_TEMPLATES,
@@ -13,6 +14,11 @@ import {
   type SlotRole,
 } from "@/lib/layout-templates";
 import type { ProductRow } from "@/types/admin";
+import {
+  activeProductsQueryOptions,
+  layoutConfigQueryOptions,
+  useSaveLayoutConfig,
+} from "./_queries";
 
 // ---- Slot role visual config --------------------------------------------------------------------
 const ROLE_COLORS: Record<SlotRole, { thumb: string; label: string }> = {
@@ -258,32 +264,21 @@ export default function LayoutPage() {
   const { supabase, adminState } = useAdminAuthContext();
   const isAuthorized = adminState.status === "authorized";
 
-  const [config, setConfig] = useState<ActiveLayoutConfig | null>(null);
-  const [products, setProducts] = useState<ProductRow[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
+  // Local draft — null means "mirror the server value" (cleared after successful save)
+  const [configDraft, setConfigDraft] = useState<ActiveLayoutConfig | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Load current layout config + product list
-  const load = useCallback(async () => {
-    if (!isAuthorized) return;
-    setIsLoading(true);
-    try {
-      const [configRes, productsRes] = await Promise.all([
-        fetch("/api/layout"),
-        supabase
-          ? supabase.from("products").select("id,name,image_url,is_active").eq("is_active", true).order("name")
-          : Promise.resolve({ data: [], error: null }),
-      ]);
-      const configData: ActiveLayoutConfig = await configRes.json();
-      setConfig(configData);
-      setProducts(((productsRes as { data: ProductRow[] | null }).data ?? []) as ProductRow[]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [supabase, isAuthorized]);
+  const { data: serverConfig, isLoading: configLoading } = useQuery(
+    layoutConfigQueryOptions(isAuthorized),
+  );
+  const { data: products = [], isLoading: productsLoading } = useQuery(
+    activeProductsQueryOptions(supabase, isAuthorized),
+  );
+  const saveConfig = useSaveLayoutConfig();
 
-  useEffect(() => { void load(); }, [load]);
+  const isLoading = configLoading || productsLoading;
+  // Derive the displayed config: prefer the local draft, fall back to server data
+  const config = configDraft ?? serverConfig ?? null;
 
   // Derived template
   const activeTemplate = config
@@ -291,32 +286,25 @@ export default function LayoutPage() {
     : LAYOUT_TEMPLATES[0];
 
   function selectTemplate(template: LayoutTemplate) {
-    setConfig(emptyConfig(template));
+    setConfigDraft(emptyConfig(template));
     setSaveStatus("idle");
   }
 
   function assignSlot(slotId: string, productId: string | null) {
     if (!config) return;
-    setConfig({ ...config, slots: { ...config.slots, [slotId]: productId } });
+    setConfigDraft({ ...config, slots: { ...config.slots, [slotId]: productId } });
     setSaveStatus("idle");
   }
 
   async function save() {
     if (!config) return;
-    setIsSaving(true);
     setSaveStatus("idle");
     try {
-      const res = await fetch("/api/layout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
-      if (!res.ok) throw new Error("Save failed");
+      await saveConfig.mutateAsync(config);
       setSaveStatus("saved");
+      setConfigDraft(null); // reset draft — server value becomes source of truth
     } catch {
       setSaveStatus("error");
-    } finally {
-      setIsSaving(false);
     }
   }
 
@@ -420,10 +408,10 @@ export default function LayoutPage() {
             <button
               type="button"
               onClick={() => void save()}
-              disabled={isSaving}
+              disabled={saveConfig.isPending}
               className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {isSaving ? <>Saving&hellip;</> : "Save & go live"}
+              {saveConfig.isPending ? <>Saving&hellip;</> : "Save & go live"}
             </button>
             {saveStatus === "saved" && (
               <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">

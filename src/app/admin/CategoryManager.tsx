@@ -3,28 +3,33 @@
 import { useState } from "react";
 
 import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { deleteCategory, importCategories, insertCategory, renameCategory, clearAllCategories, relinkProductCategories } from "@/services/categories";
-import type { CompetitorCategory } from "@/app/api/competitor-categories/route";
 import type { CategoryRow } from "@/types/admin";
 import Button from "@/components/ui/Button";
 import TextInput from "@/components/inputs/TextInput";
+import {
+  useClearAllCategories,
+  useDeleteCategory,
+  useInsertCategory,
+  useRenameCategory,
+  useSyncCategories,
+} from "./categories/_queries";
 
 type Client = NonNullable<ReturnType<typeof createSupabaseBrowserClient>>;
 
 type Props = {
   supabase: Client;
   categories: CategoryRow[];
-  onRefresh: () => void;
 };
 
-export default function CategoryManager({ supabase, categories, onRefresh }: Props) {
+export default function CategoryManager({ supabase, categories }: Props) {
+  const insertMutation = useInsertCategory(supabase);
+  const deleteMutation = useDeleteCategory(supabase);
+  const renameMutation = useRenameCategory(supabase);
+  const clearAllMutation = useClearAllCategories(supabase);
+  const syncMutation = useSyncCategories(supabase);
   const [newName, setNewName] = useState("");
   const [newParentId, setNewParentId] = useState("");  // "" = root
   const [addError, setAddError] = useState<string | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
-
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -40,20 +45,12 @@ export default function CategoryManager({ supabase, categories, onRefresh }: Pro
     });
   }
 
-  const [isClearing, setIsClearing] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
-  const [clearError, setClearError] = useState<string | null>(null);
 
   async function handleClearAll() {
-    setIsClearing(true);
-    setClearError(null);
-    const { error } = await clearAllCategories(supabase);
-    if (error) setClearError(error);
-    else {
-      setClearConfirm(false);
-      onRefresh();
-    }
-    setIsClearing(false);
+    const { error } = await clearAllMutation.mutateAsync();
+    if (error) return; // query is still invalidated via onSuccess even on service-level errors
+    setClearConfirm(false);
   }
 
   // Group: top-level + their children
@@ -63,98 +60,32 @@ export default function CategoryManager({ supabase, categories, onRefresh }: Pro
   async function handleAdd() {
     const name = newName.trim();
     if (!name) return;
-    setIsAdding(true);
     setAddError(null);
-    const { error } = await insertCategory(supabase, name, newParentId || undefined);
+    const { error } = await insertMutation.mutateAsync({ name, parentId: newParentId || undefined });
     if (error) setAddError(error);
-    else {
-      setNewName("");
-      onRefresh();
-    }
-    setIsAdding(false);
+    else setNewName("");
   }
 
   async function handleDelete(id: string) {
-    const { error } = await deleteCategory(supabase, id);
-    if (!error) onRefresh();
+    await deleteMutation.mutateAsync(id);
   }
 
   async function handleRenameSubmit(id: string) {
     const name = renameValue.trim();
     if (!name) return;
-    const { error } = await renameCategory(supabase, id, name);
-    if (!error) {
-      setRenamingId(null);
-      onRefresh();
-    }
+    const { error } = await renameMutation.mutateAsync({ id, name });
+    if (!error) setRenamingId(null);
   }
 
   async function handleSync() {
-    setIsSyncing(true);
-    setSyncError(null);
     setSyncMessage(null);
-
-    let tree: CompetitorCategory[] = [];
     try {
-      const res = await fetch("/api/competitor-categories");
-      tree = await res.json();
+      const { topCount, subCount, linked } = await syncMutation.mutateAsync();
+      const relinkedNote = linked > 0 ? ` Re-linked ${linked} product${linked !== 1 ? "s" : ""}.` : "";
+      setSyncMessage(`Synced ${topCount} categories and ${subCount} subcategories.${relinkedNote}`);
     } catch {
-      setSyncError("Failed to fetch e-katanalotis categories.");
-      setIsSyncing(false);
-      return;
+      // syncMutation.error carries the message — rendered below
     }
-
-    // Build flat entries: top-level first, then subcategories
-    // We need to insert top-level first to get their IDs, then insert subs
-    const topEntries = tree.map((c, i) => ({
-      name: c.name,
-      sort_order: i,
-      parent_id: null as string | null,
-    }));
-
-    const { error: topError } = await importCategories(supabase, topEntries);
-    if (topError) {
-      setSyncError(topError);
-      setIsSyncing(false);
-      return;
-    }
-
-    // Fetch newly inserted top-level categories to get their IDs
-    const { data: topRows } = await supabase
-      .from("categories")
-      .select("id,name")
-      .is("parent_id", null);
-
-    const nameToId = new Map<string, string>(
-      (topRows ?? []).map((r: { id: string; name: string }) => [r.name, r.id]),
-    );
-
-    // Build subcategory entries
-    const subEntries: Array<{ name: string; sort_order: number; parent_id: string | null }> = [];
-    tree.forEach((cat) => {
-      const parentId = nameToId.get(cat.name);
-      if (!parentId) return;
-      cat.sub_categories.forEach((sub, si) => {
-        subEntries.push({ name: sub.name, sort_order: si, parent_id: parentId });
-      });
-    });
-
-    if (subEntries.length > 0) {
-      // importCategories uses a different key format for subs — re-use the function
-      const { error: subError } = await importCategories(supabase, subEntries);
-      if (subError) {
-        setSyncError(subError);
-        setIsSyncing(false);
-        return;
-      }
-    }
-
-    // Relink products whose category text name matches a newly synced category
-    const { linked } = await relinkProductCategories(supabase);
-    const relinkedNote = linked > 0 ? ` Re-linked ${linked} product${linked !== 1 ? "s" : ""}.` : "";
-    setSyncMessage(`Synced ${topEntries.length} categories and ${subEntries.length} subcategories.${relinkedNote}`);
-    onRefresh();
-    setIsSyncing(false);
   }
 
   return (
@@ -163,7 +94,7 @@ export default function CategoryManager({ supabase, categories, onRefresh }: Pro
           {categories.length > 0 && !clearConfirm && (
             <button
               type="button"
-              onClick={() => { setClearError(null); setClearConfirm(true); }}
+              onClick={() => setClearConfirm(true)}
               className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
             >
               Clear all
@@ -175,10 +106,10 @@ export default function CategoryManager({ supabase, categories, onRefresh }: Pro
               <button
                 type="button"
                 onClick={() => void handleClearAll()}
-                disabled={isClearing}
+                disabled={clearAllMutation.isPending}
                 className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400"
               >
-                {isClearing ? "Clearing…" : "Yes, clear all"}
+                {clearAllMutation.isPending ? "Clearing…" : "Yes, clear all"}
               </button>
               <button
                 type="button"
@@ -192,17 +123,21 @@ export default function CategoryManager({ supabase, categories, onRefresh }: Pro
           <Button
             type="button"
             onClick={() => void handleSync()}
-            disabled={isSyncing}
+            disabled={syncMutation.isPending}
           >
-            {isSyncing ? "Syncing…" : "Sync from e-katanalotis"}
+            {syncMutation.isPending ? "Syncing…" : "Sync from e-katanalotis"}
           </Button>
       </div>  {/* end actions row */}
-      {clearError ? (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{clearError}</p>
+      {clearAllMutation.isError ? (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {clearAllMutation.error instanceof Error ? clearAllMutation.error.message : "Clear failed"}
+        </p>
       ) : null}
 
-      {syncError ? (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{syncError}</p>
+      {syncMutation.isError ? (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {syncMutation.error instanceof Error ? syncMutation.error.message : "Sync failed"}
+        </p>
       ) : null}
       {syncMessage ? (
         <p className="mt-2 text-sm text-green-700 dark:text-green-400">{syncMessage}</p>
@@ -228,9 +163,9 @@ export default function CategoryManager({ supabase, categories, onRefresh }: Pro
           <Button
             type="button"
             onClick={() => void handleAdd()}
-            disabled={isAdding || !newName.trim()}
+            disabled={insertMutation.isPending || !newName.trim()}
           >
-            {isAdding ? "Adding…" : "Add"}
+            {insertMutation.isPending ? "Adding…" : "Add"}
           </Button>
         </div>
         {newParentId === "" && (
