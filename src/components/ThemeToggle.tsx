@@ -13,30 +13,32 @@ type Palette = (typeof PALETTES)[number]["id"];
 
 export default function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [palette, setPalette] = useState<Palette>("red");
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
+  const [palette, setPalette] = useState<Palette>(() => {
+    if (typeof window === "undefined") return "red";
     const saved = localStorage.getItem("palette") as Palette | null;
-    if (saved && PALETTES.some((p) => p.id === saved)) {
-      setPalette(saved);
-      document.documentElement.dataset.palette = saved;
-    }
-  }, []);
+    return saved && PALETTES.some((p) => p.id === saved) ? saved : "red";
+  });
+
+  useEffect(() => setMounted(true), []);
+
+  // Sync data-palette attribute whenever palette changes
+  useEffect(() => {
+    document.documentElement.dataset.palette = palette;
+  }, [palette]);
 
   function handlePalette(id: Palette) {
     setPalette(id);
     localStorage.setItem("palette", id);
-    document.documentElement.dataset.palette = id;
   }
 
   function toggleDark() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }
 
-  // Avoid hydration mismatch — render nothing until client mounts
-  if (!mounted) return null;
+  // Always render the wrapper so sibling elements keep their DOM position.
+  // Content is hidden until hydration is complete (avoids mismatch with next-themes).
+  if (!mounted) return <div className="flex items-center gap-2" />;
 
   return (
     <div className="flex items-center gap-2">
