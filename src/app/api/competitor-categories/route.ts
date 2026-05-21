@@ -1,4 +1,5 @@
 import { COMPETITOR_S3_URL } from "@/lib/competitor";
+import type { RawApiData, RawCat } from "@/types/competitor";
 
 export interface CompetitorSubCategory {
   uuid: number;
@@ -23,13 +24,13 @@ export async function GET(): Promise<Response> {
     return Response.json({ error: "fetch failed" }, { status: 502 });
   }
 
-  const raw: any[] = (data as any)?.context?.MAPP_PRODUCTS?.result?.categories ?? [];
+  const raw: RawCat[] = (data as RawApiData)?.context?.MAPP_PRODUCTS?.result?.categories ?? [];
 
   const categories: CompetitorCategory[] = raw.map((c) => ({
-    uuid: c.uuid as number,
-    name: c.name as string,
+    uuid: c.uuid,
+    name: c.name,
     sub_categories: Array.isArray(c.sub_categories)
-      ? (c.sub_categories as any[]).map((s) => ({ uuid: s.uuid as number, name: s.name as string }))
+      ? c.sub_categories.map((s) => ({ uuid: s.uuid, name: s.name }))
       : [],
   }));
 

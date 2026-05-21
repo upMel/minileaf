@@ -64,7 +64,6 @@ export default function DateRangePickerInput({
 
   const fromDate = parseDate(startValue);
   const toDate = parseDate(endValue);
-  const range: DateRange = { from: fromDate, to: toDate };
 
   // Close on outside click
   useEffect(() => {

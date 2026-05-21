@@ -10,7 +10,7 @@ import {
   parseOptionalMoney,
   toDateOnlyValue,
 } from "@/types/admin";
-import type { ProductFormState, ProductRow, PromotionMode, PromotionType } from "@/types/admin";
+import type { ProductFormState, ProductRow, PromotionType } from "@/types/admin";
 
 type Client = ReturnType<typeof createSupabaseBrowserClient>;
 

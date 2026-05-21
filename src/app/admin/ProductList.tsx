@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
 
 import Button from "@/components/ui/Button";
@@ -52,11 +52,9 @@ export default function ProductList({
 }: Props) {
   const [page, setPage] = useState(1);
 
-  // Reset to page 1 whenever the filtered list changes
-  useEffect(() => { setPage(1); }, [products]);
-
   const totalPages = Math.max(1, Math.ceil(products.length / PAGE_SIZE));
-  const pageProducts = products.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const currentPage = Math.min(page, totalPages);
+  const pageProducts = products.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <Card>
@@ -187,18 +185,18 @@ export default function ProductList({
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
+            disabled={currentPage === 1}
             className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:text-zinc-300 dark:hover:bg-white/5"
           >
             ← Prev
           </button>
           <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            Page {page} of {totalPages} · {products.length} products
+            Page {currentPage} of {totalPages} · {products.length} products
           </span>
           <button
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
+            disabled={currentPage === totalPages}
             className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:text-zinc-300 dark:hover:bg-white/5"
           >
             Next →
