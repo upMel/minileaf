@@ -11,6 +11,19 @@ const withPwa = nextPwa({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "warply.s3.amazonaws.com",
+        pathname: "/applications/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
 };
 
 export default withPwa(nextConfig);
