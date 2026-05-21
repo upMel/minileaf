@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
         hostname: "warply.s3.amazonaws.com",
         pathname: "/applications/**",
       },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
     ],
   },
 };

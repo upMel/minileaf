@@ -23,7 +23,6 @@ import {
   useSavePage,
   useMovePage,
   type LayoutPage,
-  type Layout,
 } from "./_queries";
 
 // ── Single page editor ────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import SearchBar from "@/components/SearchBar";
@@ -23,7 +24,7 @@ function LeafletCard({ deal }: { deal: Deal }) {
   return (
     <article className="group relative aspect-[3/4] w-full overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-zinc-900">
       {deal.imageUrl ? (
-        <img src={deal.imageUrl} alt={deal.name} loading="lazy" className="absolute inset-0 h-full w-full object-contain" />
+        <Image src={deal.imageUrl} alt={deal.name} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-contain" />
       ) : (
         <div className="absolute inset-0 bg-zinc-50 dark:bg-zinc-800" />
       )}
@@ -184,9 +185,9 @@ export default function DealsGrid({ deals, source, categoryTree = [] }: Props) {
           {filtered.map((deal) => (
             <li key={deal.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
               {/* Thumbnail */}
-              <div className="h-[60px] w-[60px] flex-none overflow-hidden rounded-2xl border border-black/[.07] bg-white dark:bg-zinc-900">
+              <div className="relative h-[60px] w-[60px] flex-none overflow-hidden rounded-2xl border border-black/[.07] bg-white dark:bg-zinc-900">
                 {deal.imageUrl ? (
-                  <img src={deal.imageUrl} alt={deal.name} loading="lazy" className="h-full w-full object-contain" />
+                  <Image src={deal.imageUrl} alt={deal.name} fill sizes="60px" className="object-contain" />
                 ) : (
                   <div className="h-full w-full bg-zinc-100 dark:bg-zinc-800" />
                 )}

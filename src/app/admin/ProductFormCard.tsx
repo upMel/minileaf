@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import DateRangePickerInput from "@/components/inputs/DateRangePickerInput";
@@ -148,9 +149,11 @@ export default function ProductFormCard({
             <Field label="Image URL">
               <div className="flex items-center gap-2">
                 {form.imageUrl ? (
-                  <img
+                  <Image
                     src={form.imageUrl}
                     alt=""
+                    width={40}
+                    height={40}
                     className="h-10 w-10 shrink-0 rounded-lg border border-black/10 bg-zinc-100 object-contain dark:border-white/10 dark:bg-zinc-800"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                   />
@@ -309,12 +312,16 @@ export default function ProductFormCard({
                 <div className="mt-3 rounded-xl border border-black/10 p-3 dark:border-white/10">
                   <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">Found on e-katanalotis</p>
                   {lookupResult.image_url ? (
-                    <img
-                      src={lookupResult.image_url}
-                      alt={lookupResult.name ?? ""}
-                      className="mt-2 h-24 w-full rounded-lg border border-black/10 bg-zinc-100 object-contain dark:border-white/10 dark:bg-zinc-800"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).alt = "Image unavailable"; }}
-                    />
+                    <div className="relative mt-2 h-24 w-full rounded-lg border border-black/10 bg-zinc-100 dark:border-white/10 dark:bg-zinc-800">
+                      <Image
+                        src={lookupResult.image_url}
+                        alt={lookupResult.name ?? ""}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-contain"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).alt = "Image unavailable"; }}
+                      />
+                    </div>
                   ) : null}
                   {lookupResult.name ? (
                     <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { Deal } from "@/types/deals";
 import { LAYOUT_TEMPLATES, slotSpanClasses, type TemplateSlot } from "@/lib/layout-templates";
@@ -34,11 +35,12 @@ function FlierCard({ deal, slot }: { deal: Deal; slot: TemplateSlot }) {
   return (
     <article className="group relative h-full w-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/8">
       {deal.imageUrl ? (
-        <img
+        <Image
           src={deal.imageUrl}
           alt={deal.name}
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-contain p-3"
+          fill
+          sizes="(max-width: 640px) 100vw, 50vw"
+          className="object-contain p-3"
         />
       ) : (
         <div className="absolute inset-0 bg-zinc-50" />

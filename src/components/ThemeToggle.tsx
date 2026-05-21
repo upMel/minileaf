@@ -14,13 +14,16 @@ type Palette = (typeof PALETTES)[number]["id"];
 export default function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [palette, setPalette] = useState<Palette>(() => {
-    if (typeof window === "undefined") return "red";
-    const saved = localStorage.getItem("palette") as Palette | null;
-    return saved && PALETTES.some((p) => p.id === saved) ? saved : "red";
-  });
+  const [palette, setPalette] = useState<Palette>("red"); // consistent default on server + client
 
-  useEffect(() => setMounted(true), []);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setMounted(true);
+    // Read saved palette only on client, after hydration
+    const saved = localStorage.getItem("palette") as Palette | null;
+    if (saved && PALETTES.some((p) => p.id === saved)) setPalette(saved);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Sync data-palette attribute whenever palette changes
   useEffect(() => {
