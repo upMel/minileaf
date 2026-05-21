@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import ThemeToggle from "@/components/ThemeToggle";
 import Button from "@/components/ui/Button";
@@ -152,9 +153,12 @@ function AdminShell({ children }: { children: ReactNode }) {
 }
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
-    <AdminAuthProvider>
-      <AdminShell>{children}</AdminShell>
-    </AdminAuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AdminAuthProvider>
+        <AdminShell>{children}</AdminShell>
+      </AdminAuthProvider>
+    </QueryClientProvider>
   );
 }
