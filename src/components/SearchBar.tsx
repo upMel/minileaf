@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
 
 import type { SearchFilters, StatusFilter } from "@/types/search";
 import type { CategoryNode } from "@/types/deals";
@@ -55,14 +55,41 @@ function CategoryDropdown({
     setOpen((o) => !o);
   }
 
-  // Count total leaf selections for label
-  const totalLeaves = tree.flatMap((r) => (r.children.length > 0 ? r.children : [r]));
+  // Clamp the dropdown's position after it renders so it never overflows the
+  // viewport (was previously cut off on mobile when the button sat near the
+  // right/bottom edge of the screen).
+  useLayoutEffect(() => {
+    if (!open) return;
+    const dropEl = dropRef.current;
+    if (!dropEl) return;
+    const margin = 8;
+    const rect = dropEl.getBoundingClientRect();
+
+    setDropPos((prev) => {
+      let left = prev.left;
+      const maxLeft = window.innerWidth - rect.width - margin;
+      left = Math.min(left, Math.max(margin, maxLeft));
+      left = Math.max(left, margin);
+
+      let top = prev.top;
+      const maxTop = window.innerHeight - rect.height - margin;
+      top = Math.min(top, Math.max(margin, maxTop));
+      top = Math.max(top, margin);
+
+      if (left === prev.left && top === prev.top) return prev;
+      return { top, left };
+    });
+  }, [open]);
+
+  // Count total leaf selections for label. Show a generic "1 category" /
+  // "N categories" count rather than the actual name, since long category
+  // names would wrap the button onto a second line.
   const selCount = selected.length;
   const label =
     selCount === 0
       ? "Categories"
       : selCount === 1
-        ? (totalLeaves.find((n) => n.id === selected[0])?.name ?? "1 category")
+        ? "1 category"
         : `${selCount} categories`;
 
   const hasSelection = selCount > 0;
@@ -73,7 +100,7 @@ function CategoryDropdown({
         ref={btnRef}
         type="button"
         onClick={handleToggle}
-        className={`flex h-9 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors ${
+        className={`flex h-9 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-sm transition-colors ${
           hasSelection
             ? "border-transparent font-medium text-white"
             : "border-black/10 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-white/5"
@@ -99,7 +126,7 @@ function CategoryDropdown({
       {open && (
         <div
           ref={dropRef}
-          style={{ position: "fixed", top: dropPos.top, left: dropPos.left, zIndex: 50 }}
+          style={{ position: "fixed", top: dropPos.top, left: dropPos.left, zIndex: 50, maxWidth: "calc(100vw - 16px)" }}
           className="min-w-[240px] rounded-xl border border-black/10 bg-white shadow-lg dark:border-white/15 dark:bg-zinc-900"
         >
           {/* Scrollable list area */}

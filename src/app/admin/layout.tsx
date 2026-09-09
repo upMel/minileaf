@@ -44,6 +44,7 @@ const NAV_ITEMS = [
 function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { adminState, signIn, signOut } = useAdminAuthContext();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   async function handleSignOut() {
     await signOut();
@@ -101,25 +102,48 @@ function AdminShell({ children }: { children: ReactNode }) {
       {/* Top bar */}
       <header className="z-40 shrink-0 border-b border-black/10 bg-white dark:border-white/10 dark:bg-zinc-950">
         <div className="flex items-center justify-between px-4 py-2.5">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Hamburger — always visible */}
+            <button
+              type="button"
+              className="-ml-1 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 hover:bg-black/5 dark:text-zinc-400 dark:hover:bg-white/10"
+              onClick={() => setSidebarOpen((o) => !o)}
+              aria-label="Toggle menu"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
             <Image src="/miniLeaf.png" alt="MiniLeaf" width={36} height={36} className="rounded-xl" priority />
-            <span className="text-sm font-semibold text-black dark:text-zinc-50">Admin Panel</span>
+            <span className="hidden text-sm font-semibold text-black dark:text-zinc-50 sm:inline">Admin Panel</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Link href="/" className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-black/[.04] dark:border-white/15 dark:bg-black dark:text-zinc-50 dark:hover:bg-white/10">
-              Back to store
+              <span className="hidden sm:inline">Back to store</span>
+              <span className="sm:hidden">Back</span>
             </Link>
             <Button type="button" onClick={() => void handleSignOut()}>
-              Sign out
+              <span className="hidden sm:inline">Sign out</span>
+              <span className="sm:hidden">Out</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Mobile backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <nav className="w-52 shrink-0 overflow-y-auto border-r border-black/10 bg-white py-4 dark:border-white/10 dark:bg-zinc-950">
+        <nav className={`absolute inset-y-0 left-0 z-50 w-52 overflow-y-auto border-r border-black/10 bg-white py-4 transition-transform dark:border-white/10 dark:bg-zinc-950 sm:relative sm:inset-auto sm:z-auto sm:shrink-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full sm:hidden"
+        }`}>
           <ul className="flex flex-col gap-0.5 px-2">
             {NAV_ITEMS.map((item) => {
               const active = pathname.startsWith(item.href);
@@ -127,6 +151,7 @@ function AdminShell({ children }: { children: ReactNode }) {
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       active
                         ? "text-white"

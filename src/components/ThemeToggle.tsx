@@ -45,23 +45,23 @@ export default function ThemeToggle() {
 
   return (
     <div className="flex items-center gap-2">
-      {/* Palette swatches */}
-      {PALETTES.map((p) => (
-        <button
-          key={p.id}
-          onClick={() => handlePalette(p.id)}
-          title={p.label}
-          className={`h-6 w-6 rounded-full border-2 transition-all ${
-            palette === p.id
-              ? "border-black/50 dark:border-white/70 scale-110 shadow-sm"
-              : "border-transparent opacity-50 hover:opacity-80 hover:scale-105"
-          }`}
-          style={{ backgroundColor: p.color }}
-        />
-      ))}
-
-      {/* Divider */}
-      <span className="h-5 w-px bg-black/15 dark:bg-white/15" />
+      {/* Palette swatches + divider — hidden on mobile */}
+      <div className="hidden sm:flex items-center gap-2">
+        {PALETTES.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => handlePalette(p.id)}
+            title={p.label}
+            className={`h-6 w-6 rounded-full border-2 transition-all ${
+              palette === p.id
+                ? "border-black/50 dark:border-white/70 scale-110 shadow-sm"
+                : "border-transparent opacity-50 hover:opacity-80 hover:scale-105"
+            }`}
+            style={{ backgroundColor: p.color }}
+          />
+        ))}
+        <span className="h-5 w-px bg-black/15 dark:bg-white/15" />
+      </div>
 
       {/* Dark / light toggle */}
       <button
