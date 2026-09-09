@@ -261,12 +261,6 @@ export default function DealsGrid({ deals, source, categoryTree = [] }: Props) {
         </div>
 
       )}
-
-      <p className="pt-2 text-xs text-zinc-400 dark:text-zinc-500">
-        {source === "demo"
-          ? "Demo data — add Supabase env vars to load real deals."
-          : "Loaded from Supabase."}
-      </p>
     </>
   );
 }

@@ -376,27 +376,32 @@ export default function LayoutPage() {
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-zinc-400">
               2 &mdash; Pin products to slots
             </h2>
-            <div
-              className="grid gap-2"
-              style={{ gridTemplateColumns: `repeat(${activeTemplate.cols}, 1fr)` }}
-            >
-              {activeTemplate.slots.map((slot) => {
-                const takenIds = new Set(
-                  Object.entries(config?.slots ?? {})
-                    .filter(([sid, pid]) => sid !== slot.id && pid !== null)
-                    .map(([, pid]) => pid as string)
-                );
-                return (
-                  <SlotCard
-                    key={slot.id}
-                    slot={slot}
-                    assignedProductId={config?.slots[slot.id] ?? null}
-                    products={products}
-                    takenIds={takenIds}
-                    onChange={assignSlot}
-                  />
-                );
-              })}
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <div
+                className="grid gap-2"
+                style={{
+                  gridTemplateColumns: `repeat(${activeTemplate.cols}, minmax(130px, 1fr))`,
+                  minWidth: `${activeTemplate.cols * 130}px`,
+                }}
+              >
+                {activeTemplate.slots.map((slot) => {
+                  const takenIds = new Set(
+                    Object.entries(config?.slots ?? {})
+                      .filter(([sid, pid]) => sid !== slot.id && pid !== null)
+                      .map(([, pid]) => pid as string)
+                  );
+                  return (
+                    <SlotCard
+                      key={slot.id}
+                      slot={slot}
+                      assignedProductId={config?.slots[slot.id] ?? null}
+                      products={products}
+                      takenIds={takenIds}
+                      onChange={assignSlot}
+                    />
+                  );
+                })}
+              </div>
             </div>
             <p className="mt-2 text-xs text-zinc-400">
               Leave a slot as <em>auto-fill</em> to have it filled with the best-discounted active products automatically.

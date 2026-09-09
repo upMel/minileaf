@@ -3,9 +3,9 @@
 import { useView, type ViewId } from "@/context/ViewContext";
 
 const TABS: { id: ViewId; label: string }[] = [
+  { id: "category", label: "Categories" },
   { id: "leaflet", label: "Leaflet" },
   { id: "list", label: "List" },
-  { id: "category", label: "Category" },
 ];
 
 export default function ViewTabs() {

@@ -10,12 +10,12 @@ interface ViewContextValue {
 }
 
 const ViewContext = createContext<ViewContextValue>({
-  view: "leaflet",
+  view: "category",
   setView: () => {},
 });
 
 export function ViewProvider({ children }: { children: React.ReactNode }) {
-  const [view, setView] = useState<ViewId>("leaflet");
+  const [view, setView] = useState<ViewId>("category");
   return (
     <ViewContext.Provider value={{ view, setView }}>
       {children}

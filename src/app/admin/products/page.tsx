@@ -12,8 +12,12 @@ import type { ProductRow } from "@/types/admin";
 
 import DeleteModal from "../DeleteModal";
 import ProductFormCard from "../ProductFormCard";
+import ProductFormModal from "../ProductFormModal";
 import ProductList from "../ProductList";
 import { categoriesQueryOptions } from "./_queries";
+
+// Set to true to bring back the slide-in drawer instead of the centered modal.
+const USE_DRAWER = false;
 
 export default function ProductsPage() {
   const { supabase, adminState } = useAdminAuthContext();
@@ -29,21 +33,21 @@ export default function ProductsPage() {
 
   const { filters, setFilters } = useSearchFilters();
 
-  // Drawer state — null = closed, "new" or "edit" = open
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Form open state — shared by both the modal (default) and the drawer (kept for future use).
+  const [formOpen, setFormOpen] = useState(false);
 
   function openNew() {
     startNew();
-    setDrawerOpen(true);
+    setFormOpen(true);
   }
 
   function openEdit(p: ProductRow) {
     void startEdit(p);
-    setDrawerOpen(true);
+    setFormOpen(true);
   }
 
-  function closeDrawer() {
-    setDrawerOpen(false);
+  function closeForm() {
+    setFormOpen(false);
   }
 
   // Categories
@@ -122,7 +126,7 @@ export default function ProductsPage() {
   return (
     <div className="relative flex h-full">
       {/* Main content */}
-      <div className={`flex-1 p-6 transition-all duration-300 ${drawerOpen ? "mr-[440px]" : ""}`}>
+      <div className={`flex-1 p-6 transition-all duration-300 ${USE_DRAWER && formOpen ? "sm:mr-[440px]" : ""}`}>
         <ProductList
           products={filteredProducts}
           promotionsByProductId={promotionsByProductId}
@@ -146,15 +150,28 @@ export default function ProductsPage() {
         />
       </div>
 
-      {/* Slide-in drawer */}
-      {drawerOpen && (
+      {/* Product form — centered modal (default) or slide-in drawer (kept for future use) */}
+      {formOpen && !USE_DRAWER && (
+        <ProductFormModal
+          form={form}
+          onChange={setField}
+          onSubmit={async (e) => { await save(e); closeForm(); }}
+          onNew={() => { startNew(); }}
+          isSaving={isSaving}
+          saveError={saveError}
+          categories={dbCategories}
+          onClose={closeForm}
+        />
+      )}
+
+      {formOpen && USE_DRAWER && (
         <>
           {/* Backdrop (subtle) */}
           <div
             className="fixed inset-0 z-20 bg-black/10 dark:bg-black/30"
-            onClick={closeDrawer}
+            onClick={closeForm}
           />
-          <aside className="fixed right-0 top-0 z-30 flex h-full w-[440px] flex-col border-l border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+          <aside className="fixed inset-0 z-50 flex flex-col border-l border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950 sm:inset-auto sm:right-0 sm:top-0 sm:z-30 sm:h-full sm:w-[440px]">
             {/* Drawer header */}
             <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
               <span className="text-sm font-semibold text-black dark:text-zinc-50">
@@ -162,7 +179,7 @@ export default function ProductsPage() {
               </span>
               <button
                 type="button"
-                onClick={closeDrawer}
+                onClick={closeForm}
                 className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-200"
                 aria-label="Close"
               >
@@ -176,7 +193,7 @@ export default function ProductsPage() {
               <ProductFormCard
                 form={form}
                 onChange={setField}
-                onSubmit={async (e) => { await save(e); closeDrawer(); }}
+                onSubmit={async (e) => { await save(e); closeForm(); }}
                 onNew={() => { startNew(); }}
                 isSaving={isSaving}
                 saveError={saveError}

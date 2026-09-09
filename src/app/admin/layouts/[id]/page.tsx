@@ -157,27 +157,32 @@ function PageEditor({
           {/* Slot assignment */}
           <section>
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-400">Pin products to slots</p>
-            <div
-              className="grid gap-2"
-              style={{ gridTemplateColumns: `repeat(${template.cols}, 1fr)` }}
-            >
-              {template.slots.map((slot) => {
-                const takenIds = new Set(
-                  Object.entries(slots)
-                    .filter(([sid, pid]) => sid !== slot.id && pid !== null)
-                    .map(([, pid]) => pid as string)
-                );
-                return (
-                  <SlotCard
-                    key={slot.id}
-                    slot={slot}
-                    assignedProductId={slots[slot.id] ?? null}
-                    products={products}
-                    takenIds={takenIds}
-                    onChange={handleSlotChange}
-                  />
-                );
-              })}
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <div
+                className="grid gap-2"
+                style={{
+                  gridTemplateColumns: `repeat(${template.cols}, minmax(130px, 1fr))`,
+                  minWidth: `${template.cols * 130}px`,
+                }}
+              >
+                {template.slots.map((slot) => {
+                  const takenIds = new Set(
+                    Object.entries(slots)
+                      .filter(([sid, pid]) => sid !== slot.id && pid !== null)
+                      .map(([, pid]) => pid as string)
+                  );
+                  return (
+                    <SlotCard
+                      key={slot.id}
+                      slot={slot}
+                      assignedProductId={slots[slot.id] ?? null}
+                      products={products}
+                      takenIds={takenIds}
+                      onChange={handleSlotChange}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </section>
 

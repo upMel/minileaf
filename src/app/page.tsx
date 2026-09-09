@@ -76,7 +76,30 @@ export default async function Home() {
     <ViewProvider>
       <div className="flex h-dvh flex-col overflow-hidden bg-page font-sans">
         <header className="shrink-0 border-b border-black/10 bg-white dark:border-white/10 dark:bg-zinc-950">
-          <div className="grid w-full grid-cols-3 items-center px-4 py-3">
+          {/* Mobile: logo + controls row */}
+          <div className="flex items-center justify-between px-4 py-3 sm:hidden">
+            <div className="flex items-center gap-3">
+              <Image src="/miniLeaf.png" alt="MiniLeaf" width={36} height={36} className="rounded-xl" priority />
+              <h1 className="text-base font-semibold leading-tight tracking-tight text-black dark:text-zinc-50">
+                Today&apos;s deals
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Link
+                href="/admin"
+                className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-black/[.04] dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-white/10"
+              >
+                Owner
+              </Link>
+            </div>
+          </div>
+          {/* Mobile: tabs row */}
+          <div className="flex justify-center border-t border-black/[.06] px-4 py-2 sm:hidden dark:border-white/[.06]">
+            <ViewTabs />
+          </div>
+          {/* Desktop: 3-column grid */}
+          <div className="hidden w-full grid-cols-3 items-center px-4 py-3 sm:grid">
             <div className="flex items-center gap-3">
               <Image src="/miniLeaf.png" alt="MiniLeaf" width={36} height={36} className="rounded-xl" priority />
               <h1 className="text-base font-semibold leading-tight tracking-tight text-black dark:text-zinc-50">
