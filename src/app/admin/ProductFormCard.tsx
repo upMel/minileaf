@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import DateRangePickerInput from "@/components/inputs/DateRangePickerInput";
 import Button from "@/components/ui/Button";
@@ -12,6 +12,8 @@ import MoneyInput from "@/components/inputs/MoneyInput";
 import PercentInput from "@/components/inputs/PercentInput";
 import SelectInput from "@/components/inputs/SelectInput";
 import TextInput from "@/components/inputs/TextInput";
+import { useAdminAuthContext } from "@/context/AdminAuthContext";
+import { uploadProductImage } from "@/services/storage";
 
 import type { CompetitorLookupResult } from "@/app/api/competitor-prices/route";
 import type { CategoryRow, ProductFormState, PromotionMode } from "@/types/admin";
@@ -26,6 +28,10 @@ type Props = {
   categories: CategoryRow[];
   /** When true, renders without the Card wrapper (used inside the drawer) */
   inDrawer?: boolean;
+  /** id applied to the <form> element, so an external button can submit it via the `form` attribute */
+  formId?: string;
+  /** When true, hides the inline submit button (used when the caller renders its own footer button) */
+  hideSubmitButton?: boolean;
 };
 
 export default function ProductFormCard({
@@ -37,8 +43,11 @@ export default function ProductFormCard({
   saveError,
   categories,
   inDrawer = false,
+  formId,
+  hideSubmitButton = false,
 }: Props) {
   const set = onChange;
+  const { supabase } = useAdminAuthContext();
 
   const roots = categories.filter((c) => c.parent_id === null);
   const childrenOf = (id: string) => categories.filter((c) => c.parent_id === id);
@@ -46,6 +55,26 @@ export default function ProductFormCard({
   const [lookupResult, setLookupResult] = useState<CompetitorLookupResult | null>(null);
   const [isLooking, setIsLooking] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file || !supabase) return;
+    setIsUploading(true);
+    setUploadError(null);
+    const { url, error } = await uploadProductImage(supabase, file);
+    if (error || !url) {
+      setUploadError(error ?? "Upload failed.");
+    } else {
+      set({ imageUrl: url });
+    }
+    setIsUploading(false);
+  }
 
   async function handleLookup() {
     const b = form.barcode.trim();
@@ -76,7 +105,7 @@ export default function ProductFormCard({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className={inDrawer ? "p-4" : "mt-4"}>
+      <form id={formId} onSubmit={onSubmit} className={inDrawer ? "p-4" : "mt-4"}>
         <div className="grid grid-cols-1 gap-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Barcode">
@@ -146,7 +175,7 @@ export default function ProductFormCard({
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Image URL">
+            <Field label="Image">
               <div className="flex items-center gap-2">
                 {form.imageUrl ? (
                   <Image
@@ -163,26 +192,64 @@ export default function ProductFormCard({
                 <TextInput
                   value={form.imageUrl}
                   onChange={(v) => set({ imageUrl: v })}
-                  placeholder="Optional"
+                  placeholder="Paste image URL…"
                   type="url"
                   inputMode="url"
                 />
               </div>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => void handleFileSelected(e)}
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => void handleFileSelected(e)}
+                />
+              </div>
+              {uploadError ? (
+                <div className="mt-1 text-xs text-red-600 dark:text-red-400">{uploadError}</div>
+              ) : null}
             </Field>
-            <div className="flex items-end gap-3">
+            <div className="flex flex-wrap items-center gap-3 sm:pt-6">
+                <Button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || !supabase}
+                  className="text-xs"
+                >
+                  {isUploading ? "Uploading…" : "Upload photo"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={isUploading || !supabase}
+                  className="text-xs"
+                >
+                  Take photo
+                </Button>
               <Checkbox
                 checked={form.isActive}
                 onChange={(v) => set({ isActive: v })}
                 label="Active"
               />
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={isSaving}
-                className="ml-auto rounded-xl"
-              >
-                {isSaving ? "Saving…" : form.id ? "Save" : "Add"}
-              </Button>
+              {!hideSubmitButton && (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={isSaving}
+                  className="ml-auto rounded-xl"
+                >
+                  {isSaving ? "Saving…" : form.id ? "Save" : "Add"}
+                </Button>
+              )}
             </div>
           </div>
 
