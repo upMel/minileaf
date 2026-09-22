@@ -3,23 +3,28 @@ import type { ProductRow } from "@/types/admin";
 
 type Client = NonNullable<ReturnType<typeof createSupabaseBrowserClient>>;
 
+import type { PriceUnit } from "@/lib/price";
+
 export type ProductPayload = {
   barcode: string | null;
   name: string;
+  description: string | null;
   supplier: string | null;
   category_id: string | null;
   image_url: string | null;
   competitor_name: string | null;
   competitor_price: number | null;
   price: number;
+  price_unit: PriceUnit;
   is_active: boolean;
 };
 
 const PRODUCT_FIELDS =
-  "id,barcode,name,supplier,category,category_id,image_url,competitor_name,competitor_price,price,is_active,updated_at";
+  "id,barcode,name,description,supplier,category,category_id,image_url,competitor_name,competitor_price,price,price_unit,is_active,updated_at";
 
 export async function fetchProducts(
-  supabase: Client
+  supabase: Client,
+  fallbackError = "Failed to load products."
 ): Promise<{ data: ProductRow[]; error: string | null }> {
   const { data, error } = await supabase
     .from("products")
@@ -28,7 +33,7 @@ export async function fetchProducts(
     .limit(500); // increase if catalogue grows beyond 500
 
   if (error || !data) {
-    return { data: [], error: error?.message ?? "Failed to load products." };
+    return { data: [], error: error?.message ?? fallbackError };
   }
   return { data: data as ProductRow[], error: null };
 }

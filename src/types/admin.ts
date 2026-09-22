@@ -1,7 +1,10 @@
+import type { PriceUnit } from "@/lib/price";
+
 export type ProductRow = {
   id: string;
   barcode: string | null;
   name: string;
+  description: string | null;
   supplier: string | null;
   category: string | null;       // legacy free-text, kept for display
   category_id: string | null;   // FK to categories.id
@@ -9,6 +12,7 @@ export type ProductRow = {
   competitor_name: string | null;
   competitor_price: number | null;
   price: number;
+  price_unit: PriceUnit;
   is_active: boolean;
   updated_at: string;
 };
@@ -42,12 +46,14 @@ export type ProductFormState = {
   id?: string;
   barcode: string;
   name: string;
+  description: string;
   supplier: string;
   categoryId: string;  // UUID from categories.id
   imageUrl: string;
   competitorName: string;
   competitorPrice: string;
   price: string;
+  priceUnit: PriceUnit;
   isActive: boolean;
 
   promotionId?: string;
@@ -63,12 +69,14 @@ export type ProductFormState = {
 export const emptyForm: ProductFormState = {
   barcode: "",
   name: "",
+  description: "",
   supplier: "",
   categoryId: "",
   imageUrl: "",
   competitorName: "",
   competitorPrice: "",
   price: "",
+  priceUnit: "piece",
   isActive: true,
   promotionMode: "NONE",
   percentOff: "",

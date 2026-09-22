@@ -11,10 +11,13 @@ import {
   toDateOnlyValue,
 } from "@/types/admin";
 import type { ProductFormState, ProductRow, PromotionType } from "@/types/admin";
+import { toPriceUnit } from "@/lib/price";
+import { useT } from "@/context/LanguageContext";
 
 type Client = ReturnType<typeof createSupabaseBrowserClient>;
 
 export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
+  const t = useT();
   const [form, setForm] = useState<ProductFormState>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -37,12 +40,14 @@ export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
       id: p.id,
       barcode: p.barcode ?? "",
       name: p.name,
+      description: p.description ?? "",
       supplier: p.supplier ?? "",
       categoryId: p.category_id ?? "",
       imageUrl: p.image_url ?? "",
       competitorName: p.competitor_name ?? "",
       competitorPrice: typeof p.competitor_price === "number" ? String(p.competitor_price) : "",
       price: String(p.price),
+      priceUnit: toPriceUnit(p.price_unit),
       isActive: p.is_active,
       promotionId: promotion?.id,
       promotionMode: promotion?.type ?? "NONE",
@@ -64,14 +69,14 @@ export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
     // Validate + parse product fields
     const price = parseOptionalMoney(form.price);
     if (price === null) {
-      setSaveError("Price is required.");
+      setSaveError(t.errors.priceRequired);
       setIsSaving(false);
       return;
     }
 
     const competitorPrice = parseOptionalMoney(form.competitorPrice);
     if (form.competitorPrice.trim() && competitorPrice === null) {
-      setSaveError("Competitor price must be a number.");
+      setSaveError(t.errors.competitorPriceNumber);
       setIsSaving(false);
       return;
     }
@@ -79,17 +84,19 @@ export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
     const payload = {
       barcode: form.barcode.trim() || null,
       name: form.name.trim(),
+      description: form.description.trim() || null,
       supplier: form.supplier.trim() || null,
       category_id: form.categoryId || null,
       image_url: form.imageUrl.trim() || null,
       competitor_name: form.competitorName.trim() || null,
       competitor_price: competitorPrice,
       price,
+      price_unit: form.priceUnit,
       is_active: form.isActive,
     };
 
     if (!payload.name) {
-      setSaveError("Name is required.");
+      setSaveError(t.errors.nameRequired);
       setIsSaving(false);
       return;
     }
@@ -101,7 +108,7 @@ export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
       form.id
     );
     if (productError || !finalProductId) {
-      setSaveError(productError ?? "Failed to save product.");
+      setSaveError(productError ?? t.errors.failedToSaveProduct);
       setIsSaving(false);
       return;
     }
@@ -113,12 +120,12 @@ export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
     const promoEndsAt = parseOptionalDateTimeLocal(form.promoEndsAt);
 
     if (form.promoStartsAt.trim() && promoStartsAt === null) {
-      setSaveError("Promotion start date is invalid.");
+      setSaveError(t.errors.promoStartInvalid);
       setIsSaving(false);
       return;
     }
     if (form.promoEndsAt.trim() && promoEndsAt === null) {
-      setSaveError("Promotion end date is invalid.");
+      setSaveError(t.errors.promoEndInvalid);
       setIsSaving(false);
       return;
     }
@@ -139,12 +146,12 @@ export function useProductForm(supabase: Client, onSaveSuccess: () => void) {
         promotionMode === "PERCENT" &&
         (percentOffRaw === null || percentOffRaw < 0 || percentOffRaw > 100)
       ) {
-        setSaveError("Percent off must be a number between 0 and 100.");
+        setSaveError(t.errors.percentOffRange);
         setIsSaving(false);
         return;
       }
       if (promotionMode === "PRICE" && promoPriceRaw === null) {
-        setSaveError("Promo price is required.");
+        setSaveError(t.errors.promoPriceRequired);
         setIsSaving(false);
         return;
       }
