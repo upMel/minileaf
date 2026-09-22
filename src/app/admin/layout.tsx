@@ -7,14 +7,16 @@ import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import ThemeToggle from "@/components/ThemeToggle";
+import LanguageToggle from "@/components/LanguageToggle";
 import Button from "@/components/ui/Button";
 import { AdminAuthProvider, useAdminAuthContext } from "@/context/AdminAuthContext";
+import { useT } from "@/context/LanguageContext";
 import SignInCard from "./SignInCard";
 
 const NAV_ITEMS = [
   {
     href: "/admin/products",
-    label: "Products",
+    labelKey: "products" as const,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
@@ -23,7 +25,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/admin/categories",
-    label: "Categories",
+    labelKey: "categories" as const,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
@@ -32,7 +34,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/admin/layouts",
-    label: "Layouts",
+    labelKey: "layouts" as const,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="8" height="7" rx="1"/><rect x="15" y="14" width="6" height="7" rx="1"/>
@@ -44,6 +46,7 @@ const NAV_ITEMS = [
 function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { adminState, signIn, signOut } = useAdminAuthContext();
+  const t = useT();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   async function handleSignOut() {
@@ -63,12 +66,13 @@ function AdminShell({ children }: { children: ReactNode }) {
           <div className="mx-auto flex w-full items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <Image src="/miniLeaf.png" alt="MiniLeaf" width={40} height={40} className="rounded-xl" priority />
-              <span className="text-base font-semibold text-black dark:text-zinc-50">Admin</span>
+              <span className="text-base font-semibold text-black dark:text-zinc-50">{t.nav.admin}</span>
             </div>
             <div className="flex items-center gap-2">
+              <LanguageToggle />
               <ThemeToggle />
               <Link href="/" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-black/[.04] dark:border-white/15 dark:bg-black dark:text-zinc-50 dark:hover:bg-white/10">
-                Back
+                {t.nav.back}
               </Link>
             </div>
           </div>
@@ -76,19 +80,19 @@ function AdminShell({ children }: { children: ReactNode }) {
         <main className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-4 px-4 py-12">
           {adminState.status === "no-env" && (
             <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-zinc-700 dark:border-white/15 dark:bg-black dark:text-zinc-200">
-              Supabase is not configured. Add env vars in <span className="font-medium">.env.local</span>.
+              {t.auth.notConfigured} <span className="font-medium">.env.local</span>.
             </div>
           )}
           {adminState.status === "checking" && (
             <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-zinc-700 dark:border-white/15 dark:bg-black dark:text-zinc-200">
-              Checking session…
+              {t.auth.checkingSession}
             </div>
           )}
           {adminState.status === "signed-out" && <SignInCard onSignIn={signIn} />}
           {adminState.status === "unauthorized" && (
             <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-zinc-700 dark:border-white/15 dark:bg-black dark:text-zinc-200">
-              Signed in as <span className="font-medium">{adminState.email ?? "(unknown)"}</span>, but this user is not an admin.
-              <button type="button" onClick={() => void handleSignOut()} className="ml-2 text-red-500 underline text-xs">Sign out</button>
+              {t.auth.notAdminPrefix} <span className="font-medium">{adminState.email ?? t.auth.unknownEmail}</span>{t.auth.notAdminSuffix}
+              <button type="button" onClick={() => void handleSignOut()} className="ml-2 text-red-500 underline text-xs">{t.nav.signOut}</button>
             </div>
           )}
         </main>
@@ -108,24 +112,25 @@ function AdminShell({ children }: { children: ReactNode }) {
               type="button"
               className="-ml-1 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 hover:bg-black/5 dark:text-zinc-400 dark:hover:bg-white/10"
               onClick={() => setSidebarOpen((o) => !o)}
-              aria-label="Toggle menu"
+              aria-label={t.nav.toggleMenu}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
               </svg>
             </button>
             <Image src="/miniLeaf.png" alt="MiniLeaf" width={36} height={36} className="rounded-xl" priority />
-            <span className="hidden text-sm font-semibold text-black dark:text-zinc-50 sm:inline">Admin Panel</span>
+            <span className="hidden text-sm font-semibold text-black dark:text-zinc-50 sm:inline">{t.nav.adminPanel}</span>
           </div>
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
             <Link href="/" className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-black/[.04] dark:border-white/15 dark:bg-black dark:text-zinc-50 dark:hover:bg-white/10">
-              <span className="hidden sm:inline">Back to store</span>
-              <span className="sm:hidden">Back</span>
+              <span className="hidden sm:inline">{t.nav.backToStore}</span>
+              <span className="sm:hidden">{t.nav.back}</span>
             </Link>
             <Button type="button" onClick={() => void handleSignOut()}>
-              <span className="hidden sm:inline">Sign out</span>
-              <span className="sm:hidden">Out</span>
+              <span className="hidden sm:inline">{t.nav.signOut}</span>
+              <span className="sm:hidden">{t.nav.signOutShort}</span>
             </Button>
           </div>
         </div>
@@ -160,7 +165,7 @@ function AdminShell({ children }: { children: ReactNode }) {
                     style={active ? { backgroundColor: "var(--accent)" } : undefined}
                   >
                     {item.icon}
-                    {item.label}
+                    {t.nav[item.labelKey]}
                   </Link>
                 </li>
               );

@@ -14,6 +14,8 @@ import {
 } from "@/app/admin/_components/LayoutSlotPicker";
 import type { SlotRole } from "@/lib/layout-templates";
 import ConfirmModal from "@/app/admin/ConfirmModal";
+import { useT } from "@/context/LanguageContext";
+import { templateLabel } from "@/i18n/templates";
 import {
   layoutDetailQueryOptions,
   activeProductsQueryOptions,
@@ -45,6 +47,7 @@ function PageEditor({
   onDelete: () => void;
   onSave: (templateId: string, slots: Record<string, string | null>) => Promise<void>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [templateId, setTemplateId] = useState(page.template_id);
   const [slots, setSlots] = useState<Record<string, string | null>>(page.slots ?? {});
@@ -91,12 +94,12 @@ function PageEditor({
             <path d="m9 18 6-6-6-6" />
           </svg>
           <span className="text-sm font-medium text-black dark:text-zinc-100">
-            Page {page.page_order + 1}
+            {t.layouts.page(page.page_order + 1)}
           </span>
-          <span className="text-xs text-zinc-400">{template.name}</span>
+          <span className="text-xs text-zinc-400">{templateLabel(t, template.id, template).name}</span>
           {dirty && <span className="size-1.5 rounded-full bg-amber-400" />}
           {saved && !dirty && (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400">Saved</span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400">{t.layouts.saved}</span>
           )}
         </button>
 
@@ -107,7 +110,7 @@ function PageEditor({
             disabled={isFirst}
             onClick={onMoveUp}
             className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 disabled:opacity-30 dark:hover:bg-zinc-800"
-            aria-label="Move page up"
+            aria-label={t.layouts.movePageUp}
           >
             <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m18 15-6-6-6 6" />
@@ -118,7 +121,7 @@ function PageEditor({
             disabled={isLast}
             onClick={onMoveDown}
             className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 disabled:opacity-30 dark:hover:bg-zinc-800"
-            aria-label="Move page down"
+            aria-label={t.layouts.movePageDown}
           >
             <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m6 9 6 6 6-6" />
@@ -128,7 +131,7 @@ function PageEditor({
             type="button"
             onClick={onDelete}
             className="rounded-lg p-1.5 text-[var(--danger)] hover:bg-[var(--danger)]/10"
-            aria-label="Delete page"
+            aria-label={t.layouts.deletePage}
           >
             <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" />
@@ -142,13 +145,15 @@ function PageEditor({
         <div className="flex flex-col gap-6 border-t border-black/8 p-4 dark:border-white/8">
           {/* Template picker */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-400">Template</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-400">{t.layouts.template}</p>
             <TemplatePicker selectedId={templateId} onSelect={handleTemplateSelect} />
             <div className="mt-2 flex items-center gap-4">
               {(["hero", "featured", "small"] as SlotRole[]).map((role) => (
                 <div key={role} className="flex items-center gap-1.5">
                   <span className={`size-2.5 rounded-sm ${ROLE_COLORS[role].thumb}`} />
-                  <span className="text-xs text-zinc-500">{ROLE_COLORS[role].label}</span>
+                  <span className="text-xs text-zinc-500">
+                    {role === "hero" ? t.layouts.roleHero : role === "featured" ? t.layouts.roleFeatured : t.layouts.roleSmall}
+                  </span>
                 </div>
               ))}
             </div>
@@ -156,7 +161,7 @@ function PageEditor({
 
           {/* Slot assignment */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-400">Pin products to slots</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-400">{t.layouts.pinProducts}</p>
             <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               <div
                 className="grid gap-2"
@@ -194,7 +199,7 @@ function PageEditor({
               disabled={saving || !dirty}
               className="rounded-xl bg-[var(--accent)] px-5 py-2 text-sm font-medium text-[var(--accent-fg)] hover:opacity-90 disabled:opacity-40 transition-opacity"
             >
-              {saving ? "Saving\u2026" : "Save page"}
+              {saving ? t.common.saving : t.layouts.savePage}
             </button>
           </div>
         </div>
@@ -206,6 +211,7 @@ function PageEditor({
 // ── Main editor page ──────────────────────────────────────────────────────────
 export default function LayoutEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const t = useT();
   const { supabase, adminState } = useAdminAuthContext();
   const isAuthorized = adminState.status === "authorized";
 
@@ -282,7 +288,7 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
   const pages = layout ? [...layout.pages].sort((a, b) => a.page_order - b.page_order) : [];
 
   return (
-    <div className="flex w-full flex-col gap-6 px-6 py-8">
+    <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       {/* Back */}
       <Link
         href="/admin/layouts"
@@ -291,22 +297,22 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
         <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6" />
         </svg>
-        All layouts
+        {t.layouts.allLayouts}
       </Link>
 
       {isLoading ? (
-        <p className="text-sm text-zinc-400">Loading&hellip;</p>
+        <p className="text-sm text-zinc-400">{t.common.loading}</p>
       ) : !layout ? (
-        <p className="text-sm text-red-500">Layout not found.</p>
+        <p className="text-sm text-red-500">{t.layouts.notFound}</p>
       ) : (
         <>
           {/* ── Layout settings ── */}
           <div className="flex flex-col gap-4 rounded-2xl border border-black/10 bg-white p-5 dark:border-white/10 dark:bg-zinc-900">
-            <h1 className="text-lg font-semibold text-black dark:text-zinc-50">Layout settings</h1>
+            <h1 className="text-lg font-semibold text-black dark:text-zinc-50">{t.layouts.settings}</h1>
 
             {/* Name */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-zinc-500">Name</label>
+              <label className="text-xs font-medium text-zinc-500">{t.layouts.name}</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -316,13 +322,13 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
                   onKeyDown={(e) => e.key === "Enter" && void saveName()}
                   className="flex-1 rounded-lg border border-black/10 bg-zinc-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent)_25%,transparent)] dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-100"
                 />
-                {updateName.isPending && <span className="self-center text-xs text-zinc-400">Saving&hellip;</span>}
+                {updateName.isPending && <span className="self-center text-xs text-zinc-400">{t.common.saving}</span>}
               </div>
             </div>
 
             {/* Orientation */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-zinc-500">Orientation</label>
+              <label className="text-xs font-medium text-zinc-500">{t.layouts.orientation}</label>
               <div className="flex gap-2">
                 {(["landscape", "portrait"] as const).map((o) => (
                   <button
@@ -332,7 +338,7 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
                     onClick={() => void saveOrientation(o)}
                     className={`flex-1 rounded-lg border py-2 text-sm font-medium capitalize transition-colors disabled:opacity-50 ${orientation === o ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent)]" : "border-black/10 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-400"}`}
                   >
-                    {o === "landscape" ? "Landscape (16:9)" : "Portrait (A4)"}
+                    {o === "landscape" ? t.layouts.landscapeRatio : t.layouts.portraitRatio}
                   </button>
                 ))}
               </div>
@@ -343,7 +349,7 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-black dark:text-zinc-100">
-                Pages ({pages.length})
+                {t.layouts.pagesCount(pages.length)}
               </h2>
               <button
                 type="button"
@@ -354,13 +360,13 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
                 <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                {addPageMutation.isPending ? "Adding…" : "Add page"}
+                {addPageMutation.isPending ? t.common.adding : t.layouts.addPage}
               </button>
             </div>
 
             {pages.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-black/15 bg-white py-10 text-center dark:border-white/10 dark:bg-zinc-900">
-                <p className="text-sm text-zinc-400">No pages yet. Add your first page above.</p>
+                <p className="text-sm text-zinc-400">{t.layouts.noPages}</p>
               </div>
             ) : (
               pages.map((page, idx) => (
@@ -386,7 +392,7 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
               onClick={() => router.push("/admin/layouts")}
               className="rounded-xl border border-black/10 bg-white px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300"
             >
-              Done
+              {t.common.done}
             </button>
           </div>
         </>
@@ -394,9 +400,9 @@ export default function LayoutEditorPage({ params }: { params: Promise<{ id: str
 
       {pendingDeletePageId && (
         <ConfirmModal
-          title="Delete this page?"
-          description="This action cannot be undone. All slot assignments on this page will be lost."
-          confirmLabel="Delete page"
+          title={t.layouts.deletePageTitle}
+          description={t.layouts.deletePageDescription}
+          confirmLabel={t.layouts.deletePageConfirm}
           isConfirming={deletePageMutation.isPending}
           onCancel={() => setPendingDeletePageId(null)}
           onConfirm={() => void confirmDeletePage()}

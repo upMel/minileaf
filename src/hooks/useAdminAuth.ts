@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useT } from "@/context/LanguageContext";
 
 type Client = ReturnType<typeof createSupabaseBrowserClient>;
 
@@ -12,6 +13,8 @@ export type AdminState =
   | { status: "authorized"; email?: string };
 
 export function useAdminAuth(supabase: Client) {
+  // Named `dict` because a local `t` timeout variable already exists below.
+  const dict = useT();
   const [adminState, setAdminState] = useState<AdminState>(
     supabase ? { status: "checking" } : { status: "no-env" }
   );
@@ -47,7 +50,7 @@ export function useAdminAuth(supabase: Client) {
   }, [supabase, refresh]);
 
   async function signIn(email: string, password: string): Promise<string | null> {
-    if (!supabase) return "Supabase not configured.";
+    if (!supabase) return dict.auth.supabaseNotConfigured;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return error.message;
     await refresh();

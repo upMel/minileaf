@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useLayoutEffect } from "react";
 
 import type { SearchFilters, StatusFilter } from "@/types/search";
 import type { CategoryNode } from "@/types/deals";
+import { useT } from "@/context/LanguageContext";
 
 export type { CategoryNode } from "@/types/deals";
 
@@ -29,6 +30,7 @@ function CategoryDropdown({
   onToggle: (id: string) => void;
   onToggleRoot: (ids: string[]) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
   const ref = useRef<HTMLDivElement>(null);
@@ -85,12 +87,7 @@ function CategoryDropdown({
   // "N categories" count rather than the actual name, since long category
   // names would wrap the button onto a second line.
   const selCount = selected.length;
-  const label =
-    selCount === 0
-      ? "Categories"
-      : selCount === 1
-        ? "1 category"
-        : `${selCount} categories`;
+  const label = selCount === 0 ? t.search.categories : t.search.categoryCount(selCount);
 
   const hasSelection = selCount > 0;
 
@@ -100,10 +97,10 @@ function CategoryDropdown({
         ref={btnRef}
         type="button"
         onClick={handleToggle}
-        className={`flex h-9 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-sm transition-colors ${
+        className={`flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-sm transition-colors ${
           hasSelection
-            ? "border-transparent font-medium text-white"
-            : "border-black/10 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-white/5"
+            ? "border-transparent font-medium"
+            : "border-black/[.08] bg-white text-zinc-700 hover:bg-zinc-50 dark:border-white/[.1] dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-white/5"
         }`}
         style={hasSelection ? { backgroundColor: "var(--accent)", color: "var(--accent-fg)" } : undefined}
       >
@@ -132,7 +129,7 @@ function CategoryDropdown({
           {/* Scrollable list area */}
           <div className="max-h-80 overflow-y-auto py-1">
           {tree.length === 0 ? (
-            <span className="block px-3 py-2 text-xs text-zinc-400">No categories</span>
+            <span className="block px-3 py-2 text-xs text-zinc-400">{t.search.noCategories}</span>
           ) : (
             tree.map((root) => {
               const leaves = root.children.length > 0 ? root.children : [root];
@@ -208,7 +205,7 @@ function CategoryDropdown({
                 onClick={() => onToggleRoot([])}
                 className="w-full px-3 py-1.5 text-left text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
               >
-                Clear all
+                {t.common.clearAll}
               </button>
             </div>
           )}
@@ -218,11 +215,7 @@ function CategoryDropdown({
   );
 }
 // --- Status toggle (admin only) ---
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-];
+const STATUS_VALUES: StatusFilter[] = ["all", "active", "inactive"];
 
 function StatusToggle({
   value,
@@ -231,8 +224,14 @@ function StatusToggle({
   value: StatusFilter;
   onChange: (v: StatusFilter) => void;
 }) {
+  const t = useT();
+  const STATUS_OPTIONS = STATUS_VALUES.map((v) => ({
+    value: v,
+    label: v === "all" ? t.common.all : v === "active" ? t.common.active : t.common.inactive,
+  }));
+
   return (
-    <div className="flex h-9 items-center gap-0 rounded-xl border border-black/10 bg-white overflow-hidden dark:border-white/15 dark:bg-zinc-900">
+    <div className="flex h-10 items-center gap-0 overflow-hidden rounded-xl border border-black/[.08] bg-white dark:border-white/[.1] dark:bg-zinc-900">
       {STATUS_OPTIONS.map((opt, i) => {
         const active = value === opt.value;
         return (
@@ -263,8 +262,11 @@ export default function SearchBar({
   categoryTree,
   onChange,
   showStatus = false,
-  placeholder = "Search products…",
+  placeholder,
 }: Props) {
+  const t = useT();
+  const resolvedPlaceholder = placeholder ?? t.search.placeholderProducts;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Search input */}
@@ -287,8 +289,8 @@ export default function SearchBar({
           type="text"
           value={filters.query}
           onChange={(e) => onChange({ ...filters, query: e.target.value })}
-          placeholder={placeholder}
-          className="h-9 w-full rounded-xl border border-black/10 bg-white pl-8 pr-8 text-sm text-black outline-none placeholder:text-zinc-400 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500"
+          placeholder={resolvedPlaceholder}
+          className="h-10 w-full rounded-xl border border-black/[.08] bg-white pl-8 pr-8 text-sm text-black outline-none transition-colors placeholder:text-zinc-400 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 dark:border-white/[.1] dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500"
         />
         {filters.query && (
           <button
@@ -296,7 +298,7 @@ export default function SearchBar({
             onClick={() => onChange({ ...filters, query: "" })}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 transition-colors hover:opacity-70"
             style={{ color: "var(--accent)" }}
-            aria-label="Clear search"
+            aria-label={t.search.clearSearch}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -338,18 +340,18 @@ export default function SearchBar({
       <button
         type="button"
         onClick={() => onChange({ ...filters, hasPromoOnly: !filters.hasPromoOnly })}
-        className={`flex h-9 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors ${
+        className={`flex h-10 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors ${
           filters.hasPromoOnly
-            ? "border-transparent font-medium text-white"
-            : "border-black/10 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-white/5"
+            ? "border-transparent font-medium"
+            : "border-black/[.08] bg-white text-zinc-700 hover:bg-zinc-50 dark:border-white/[.1] dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-white/5"
         }`}
         style={filters.hasPromoOnly ? { backgroundColor: "var(--accent)", color: "var(--accent-fg)" } : undefined}
       >
-        On sale
+        {t.search.onSale}
       </button>
 
       {/* Price range */}
-      <div className="flex h-9 items-center gap-1 rounded-xl border border-black/10 bg-white px-2 dark:border-white/15 dark:bg-zinc-900">
+      <div className="flex h-10 items-center gap-1 rounded-xl border border-black/[.08] bg-white px-2 dark:border-white/[.1] dark:bg-zinc-900">
         <span className="text-xs text-zinc-400">€</span>
         <input
           type="number"
@@ -357,7 +359,7 @@ export default function SearchBar({
           step="0.01"
           value={filters.minPrice}
           onChange={(e) => onChange({ ...filters, minPrice: e.target.value })}
-          placeholder="Min"
+          placeholder={t.search.min}
           className="h-full w-14 bg-transparent text-sm text-black outline-none placeholder:text-zinc-400 dark:text-zinc-50 dark:placeholder:text-zinc-500"
         />
         <span className="text-xs text-zinc-300 dark:text-zinc-600">–</span>
@@ -367,7 +369,7 @@ export default function SearchBar({
           step="0.01"
           value={filters.maxPrice}
           onChange={(e) => onChange({ ...filters, maxPrice: e.target.value })}
-          placeholder="Max"
+          placeholder={t.search.max}
           className="h-full w-14 bg-transparent text-sm text-black outline-none placeholder:text-zinc-400 dark:text-zinc-50 dark:placeholder:text-zinc-500"
         />
       </div>
@@ -399,9 +401,9 @@ export default function SearchBar({
               status: "all",
             })
           }
-          className="flex h-9 items-center rounded-xl px-2 text-xs text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-200"
+          className="flex h-10 items-center rounded-xl px-2 text-xs text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-200"
         >
-          Clear
+          {t.common.clear}
         </button>
       )}
     </div>

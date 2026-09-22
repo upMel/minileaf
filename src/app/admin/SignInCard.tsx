@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Field from "@/components/ui/Field";
 import TextInput from "@/components/inputs/TextInput";
+import { useT } from "@/context/LanguageContext";
 
 type Props = {
   /** Returns an error string on failure, or null on success. */
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default function SignInCard({ onSignIn }: Props) {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function SignInCard({ onSignIn }: Props) {
     <Card>
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col gap-3">
-          <Field label="Email">
+          <Field label={t.auth.email}>
             <TextInput
               value={email}
               onChange={setEmail}
@@ -47,7 +49,7 @@ export default function SignInCard({ onSignIn }: Props) {
             />
           </Field>
 
-          <Field label="Password">
+          <Field label={t.auth.password}>
             <TextInput
               value={password}
               onChange={setPassword}
@@ -60,7 +62,7 @@ export default function SignInCard({ onSignIn }: Props) {
           {error ? <div className="text-sm text-red-600 dark:text-red-400">{error}</div> : null}
 
           <Button type="submit" variant="primary" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting ? t.auth.signingIn : t.auth.signIn}
           </Button>
         </div>
       </form>
