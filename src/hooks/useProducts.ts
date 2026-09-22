@@ -8,16 +8,18 @@ import {
 } from "@/services/products";
 import { fetchPromotionsForProducts } from "@/services/promotions";
 import type { ProductRow, PromotionRow } from "@/types/admin";
+import { useT } from "@/context/LanguageContext";
 
 type Client = ReturnType<typeof createSupabaseBrowserClient>;
 
 export function useProducts(supabase: Client, enabled: boolean) {
+  const t = useT();
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data: rows, error: fetchError } = await fetchProducts(supabase!);
+      const { data: rows, error: fetchError } = await fetchProducts(supabase!, t.errors.failedToLoadProducts);
       if (fetchError) throw new Error(fetchError);
       const { data: promos } = await fetchPromotionsForProducts(
         supabase!,

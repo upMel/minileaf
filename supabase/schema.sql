@@ -20,11 +20,14 @@ create table if not exists public.products (
 
   barcode text unique,
   name text not null,
+  description text,
   supplier text,
   category text,
   image_url text,
 
   price numeric(10,2) not null check (price >= 0),
+  -- how price is quoted: per item (default) or per kilogram
+  price_unit text not null default 'piece' check (price_unit in ('piece', 'kg')),
   is_active boolean not null default true
 );
 
@@ -164,6 +167,8 @@ select
   p.barcode,
   p.name,
   p.supplier,
+  p.description,
+  p.price_unit,
 
   -- category as free-text (legacy, kept for backward compat)
   p.category,

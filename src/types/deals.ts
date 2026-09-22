@@ -1,12 +1,16 @@
+import type { PriceUnit } from "@/lib/price";
+
 export type Deal = {
   id: string;
   name: string;
+  description?: string;
   /** UUID — used for filtering */
   categoryId?: string;
   /** Display name (legacy fallback) */
   category?: string;
   imageUrl?: string;
   price: number;
+  priceUnit: PriceUnit;
   originalPrice?: number;
   promoLabel?: string;
   competitorName?: string;
@@ -22,6 +26,8 @@ export type CategoryNode = {
 export type SupabaseDealRow = {
   product_id: string;
   name: string;
+  description: string | null;
+  price_unit: string | null;
   category: string | null;
   category_id: string | null;
   image_url: string | null;

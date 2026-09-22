@@ -72,9 +72,10 @@
   /* ── Palette tokens (default: Market Red) ── */
   --accent:     #d62828;
   --accent-fg:  #ffffff;
-  --badge-bg:   #f4a261;
-  --badge-fg:   #1a1a1a;
-  --page-bg:    #fff8f8;
+  --badge-bg:   #a41f18;
+  --badge-fg:   #ffffff;
+  /* Neutral, not tinted — the products supply the colour, not the page. */
+  --page-bg:    #fafafa;
   --danger:     #b91c1c;
   --danger-fg:  #ffffff;
 }
@@ -83,9 +84,9 @@
 [data-palette="green"] {
   --accent:     #2d6a4f;
   --accent-fg:  #ffffff;
-  --badge-bg:   #e9c46a;
-  --badge-fg:   #1b2f1b;
-  --page-bg:    #f9faf4;
+  --badge-bg:   #1b4332;
+  --badge-fg:   #ffffff;
+  --page-bg:    #fafafa;
   --danger:     #dc2626;
   --danger-fg:  #ffffff;
 }
@@ -94,9 +95,9 @@
 [data-palette="amber"] {
   --accent:     #e07b00;
   --accent-fg:  #ffffff;
-  --badge-bg:   #c1121f;
+  --badge-bg:   #8a4b00;
   --badge-fg:   #ffffff;
-  --page-bg:    #fdf8f0;
+  --page-bg:    #fafafa;
   --danger:     #c1121f;
   --danger-fg:  #ffffff;
 }
@@ -106,27 +107,27 @@
   --background: #0a0a0a;
   --foreground: #ededed;
   --accent:     #e84040;
-  --page-bg:    #1a0a0a;
+  --page-bg:    #0f0f10;
   --danger:     #ef4444;
 }
 
 .dark[data-palette="green"] {
   --accent:   #52b788;
-  --page-bg:  #0f1a0f;
+  --page-bg:  #0f0f10;
   --danger:   #f87171;
 }
 
 .dark[data-palette="amber"] {
   --accent:   #f59e0b;
-  --page-bg:  #1c1510;
+  --page-bg:  #0f0f10;
   --danger:   #f87171;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-app-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -136,7 +137,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-app-sans), system-ui, sans-serif;
 }
 
 /* ── Datepicker (react-day-picker v10) ── */

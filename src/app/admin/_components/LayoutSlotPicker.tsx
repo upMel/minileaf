@@ -10,6 +10,8 @@ import {
   type SlotRole,
 } from "@/lib/layout-templates";
 import type { ProductRow } from "@/types/admin";
+import { useT } from "@/context/LanguageContext";
+import { templateLabel } from "@/i18n/templates";
 
 // ── Role colours ──────────────────────────────────────────────────────────────
 export const ROLE_COLORS: Record<SlotRole, { thumb: string; label: string }> = {
@@ -72,6 +74,7 @@ export function ProductCombobox({
   products: ProductRow[];
   takenIds: Set<string>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const [query, setQuery] = useState("");
@@ -128,7 +131,7 @@ export function ProductCombobox({
             <span className="flex-1 truncate text-zinc-800 dark:text-zinc-200">{selectedProduct.name}</span>
           </>
         ) : (
-          <span className="flex-1 truncate text-zinc-400 dark:text-zinc-500">&mdash; auto-fill &mdash;</span>
+          <span className="flex-1 truncate text-zinc-400 dark:text-zinc-500">{t.layouts.autoFill}</span>
         )}
         <svg
           className={`size-4 shrink-0 text-zinc-400 transition-transform ${open ? (openUpward ? "" : "rotate-180") : (openUpward ? "rotate-180" : "")}`}
@@ -148,7 +151,7 @@ export function ProductCombobox({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search products..."
+                placeholder={t.layouts.searchProducts}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none dark:text-zinc-200"
@@ -170,7 +173,7 @@ export function ProductCombobox({
                 className={`flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${value === null ? "font-medium text-[var(--accent)]" : "text-zinc-500 dark:text-zinc-400"}`}
               >
                 <span className="size-6 shrink-0" />
-                &mdash; auto-fill &mdash;
+                {t.layouts.autoFill}
                 {value === null && (
                   <svg className="ml-auto size-4 shrink-0 text-[var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 6 9 17l-5-5" />
@@ -179,7 +182,7 @@ export function ProductCombobox({
               </button>
             </li>
             {filtered.length === 0 && (
-              <li className="px-3 py-2 text-xs text-zinc-400">No results for &ldquo;{query}&rdquo;</li>
+              <li className="px-3 py-2 text-xs text-zinc-400">{t.layouts.noResultsFor(query)}</li>
             )}
             {filtered.map((p) => (
               <li key={p.id}>
@@ -219,7 +222,10 @@ export function SlotCard({
   takenIds: Set<string>;
   onChange: (slotId: string, productId: string | null) => void;
 }) {
-  const { thumb, label } = ROLE_COLORS[slot.role];
+  const t = useT();
+  const { thumb } = ROLE_COLORS[slot.role];
+  const label =
+    slot.role === "hero" ? t.layouts.roleHero : slot.role === "featured" ? t.layouts.roleFeatured : t.layouts.roleSmall;
   return (
     <div className={`${slotSpanClasses(slot.size)} flex flex-col gap-2 rounded-xl border border-black/8 bg-white p-3 dark:border-white/10 dark:bg-zinc-900`}>
       <div className="flex items-center gap-1.5">
@@ -245,8 +251,10 @@ export function TemplatePicker({
   onSelect,
 }: {
   selectedId: string;
-  onSelect: (t: LayoutTemplate) => void;
+  onSelect: (template: LayoutTemplate) => void;
 }) {
+  const t = useT();
+
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {LAYOUT_TEMPLATES.map((template) => {
@@ -264,14 +272,14 @@ export function TemplatePicker({
           >
             <TemplateThumbnail template={template} />
             <div className="flex items-center justify-between gap-1">
-              <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{template.name}</span>
+              <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{templateLabel(t, template.id, template).name}</span>
               {isSelected && (
                 <svg className="size-4 shrink-0 text-[var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 6 9 17l-5-5" />
                 </svg>
               )}
             </div>
-            <p className="text-[10px] leading-snug text-zinc-400">{template.description}</p>
+            <p className="text-[10px] leading-snug text-zinc-400">{templateLabel(t, template.id, template).description}</p>
           </button>
         );
       })}

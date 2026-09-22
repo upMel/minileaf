@@ -8,7 +8,7 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function Button({ variant = "secondary", className = "", ...props }: Props) {
   const base =
-    "rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60";
+    "shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60";
 
   const byVariant: Record<Variant, string> = {
     secondary:

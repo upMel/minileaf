@@ -6,6 +6,7 @@ import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { CategoryRow } from "@/types/admin";
 import Button from "@/components/ui/Button";
 import TextInput from "@/components/inputs/TextInput";
+import { useT } from "@/context/LanguageContext";
 import {
   useClearAllCategories,
   useDeleteCategory,
@@ -22,6 +23,7 @@ type Props = {
 };
 
 export default function CategoryManager({ supabase, categories }: Props) {
+  const t = useT();
   const insertMutation = useInsertCategory(supabase);
   const deleteMutation = useDeleteCategory(supabase);
   const renameMutation = useRenameCategory(supabase);
@@ -81,8 +83,8 @@ export default function CategoryManager({ supabase, categories }: Props) {
     setSyncMessage(null);
     try {
       const { topCount, subCount, linked } = await syncMutation.mutateAsync();
-      const relinkedNote = linked > 0 ? ` Re-linked ${linked} product${linked !== 1 ? "s" : ""}.` : "";
-      setSyncMessage(`Synced ${topCount} categories and ${subCount} subcategories.${relinkedNote}`);
+      const relinkedNote = linked > 0 ? t.categories.relinked(linked) : "";
+      setSyncMessage(`${t.categories.synced(topCount, subCount)}${relinkedNote}`);
     } catch {
       // syncMutation.error carries the message — rendered below
     }
@@ -90,33 +92,33 @@ export default function CategoryManager({ supabase, categories }: Props) {
 
   return (
     <div className="px-4 pb-4">
-      <div className="flex items-center justify-end gap-2 border-b border-black/10 py-2 dark:border-white/10">
+      <div className="flex flex-wrap items-center justify-end gap-2 border-b border-black/10 py-2 dark:border-white/10">
           {categories.length > 0 && !clearConfirm && (
             <button
               type="button"
               onClick={() => setClearConfirm(true)}
               className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
             >
-              Clear all
+              {t.common.clearAll}
             </button>
           )}
           {clearConfirm && (
             <>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">Delete all categories?</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">{t.categories.confirmDeleteAll}</span>
               <button
                 type="button"
                 onClick={() => void handleClearAll()}
                 disabled={clearAllMutation.isPending}
                 className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400"
               >
-                {clearAllMutation.isPending ? "Clearing…" : "Yes, clear all"}
+                {clearAllMutation.isPending ? t.categories.clearing : t.categories.yesClearAll}
               </button>
               <button
                 type="button"
                 onClick={() => setClearConfirm(false)}
                 className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
               >
-                Cancel
+                {t.common.cancel}
               </button>
             </>
           )}
@@ -125,18 +127,18 @@ export default function CategoryManager({ supabase, categories }: Props) {
             onClick={() => void handleSync()}
             disabled={syncMutation.isPending}
           >
-            {syncMutation.isPending ? "Syncing…" : "Sync from e-katanalotis"}
+            {syncMutation.isPending ? t.categories.syncing : t.categories.syncFromSource}
           </Button>
       </div>  {/* end actions row */}
       {clearAllMutation.isError ? (
         <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-          {clearAllMutation.error instanceof Error ? clearAllMutation.error.message : "Clear failed"}
+          {clearAllMutation.error instanceof Error ? clearAllMutation.error.message : t.categories.clearFailed}
         </p>
       ) : null}
 
       {syncMutation.isError ? (
         <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-          {syncMutation.error instanceof Error ? syncMutation.error.message : "Sync failed"}
+          {syncMutation.error instanceof Error ? syncMutation.error.message : t.categories.syncFailed}
         </p>
       ) : null}
       {syncMessage ? (
@@ -144,33 +146,36 @@ export default function CategoryManager({ supabase, categories }: Props) {
       ) : null}
 
       <div className="mt-4 flex flex-col gap-2">
-        <div className="flex gap-2">
-          <TextInput
-            value={newName}
-            onChange={setNewName}
-            placeholder="Category name"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="min-w-0 flex-1">
+            <TextInput
+              value={newName}
+              onChange={setNewName}
+              placeholder={t.categories.namePlaceholder}
+            />
+          </div>
           <select
             value={newParentId}
             onChange={(e) => setNewParentId(e.target.value)}
-            className="h-9 rounded-xl border border-black/10 bg-white px-3 text-sm text-zinc-700 focus:outline-none dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-200"
+            className="h-9 w-full min-w-0 rounded-xl border border-black/10 bg-white px-3 text-sm text-zinc-700 focus:outline-none sm:w-44 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-200"
           >
-            <option value="">Root category</option>
+            <option value="">{t.categories.rootCategory}</option>
             {roots.map((r) => (
               <option key={r.id} value={r.id}>{r.name}</option>
             ))}
           </select>
           <Button
             type="button"
+            className="w-full shrink-0 sm:w-auto"
             onClick={() => void handleAdd()}
             disabled={insertMutation.isPending || !newName.trim()}
           >
-            {insertMutation.isPending ? "Adding…" : "Add"}
+            {insertMutation.isPending ? t.common.adding : t.common.add}
           </Button>
         </div>
         {newParentId === "" && (
           <p className="text-xs text-zinc-400 dark:text-zinc-500">
-            No parent selected — will be added as a root category.
+            {t.categories.rootHint}
           </p>
         )}
       </div>
@@ -180,7 +185,7 @@ export default function CategoryManager({ supabase, categories }: Props) {
 
       {categories.length === 0 ? (
         <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-          No categories yet. Add one above or sync from e-katanalotis.
+          {t.categories.empty}
         </p>
       ) : (
         <ul className="mt-3 divide-y divide-black/5 dark:divide-white/5">
@@ -196,7 +201,7 @@ export default function CategoryManager({ supabase, categories }: Props) {
                       type="button"
                       onClick={() => toggleExpanded(cat.id)}
                       className="shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                      aria-label={isExpanded ? "Collapse" : "Expand"}
+                      aria-label={isExpanded ? t.common.collapse : t.common.expand}
                     >
                       <svg
                         width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -211,15 +216,17 @@ export default function CategoryManager({ supabase, categories }: Props) {
                   )}
                   {renamingId === cat.id ? (
                     <>
-                      <TextInput
-                        value={renameValue}
-                        onChange={setRenameValue}
-                      />
+                      <div className="min-w-0 flex-1">
+                        <TextInput
+                          value={renameValue}
+                          onChange={setRenameValue}
+                        />
+                      </div>
                       <Button type="button" onClick={() => void handleRenameSubmit(cat.id)}>
-                        Save
+                        {t.common.save}
                       </Button>
                       <Button type="button" onClick={() => setRenamingId(null)}>
-                        Cancel
+                        {t.common.cancel}
                       </Button>
                     </>
                   ) : (
@@ -227,7 +234,7 @@ export default function CategoryManager({ supabase, categories }: Props) {
                       <button
                         type="button"
                         onClick={() => subs.length > 0 ? toggleExpanded(cat.id) : undefined}
-                        className={`flex-1 text-left text-sm font-medium text-zinc-800 dark:text-zinc-200 ${subs.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+                        className={`min-w-0 flex-1 text-left text-sm font-medium break-words text-zinc-800 dark:text-zinc-200 ${subs.length > 0 ? "cursor-pointer" : "cursor-default"}`}
                       >
                         {cat.name}
                         {subs.length > 0 ? (
@@ -241,14 +248,14 @@ export default function CategoryManager({ supabase, categories }: Props) {
                         onClick={() => { setRenamingId(cat.id); setRenameValue(cat.name); }}
                         className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
                       >
-                        Rename
+                        {t.common.rename}
                       </button>
                       <button
                         type="button"
                         onClick={() => void handleDelete(cat.id)}
                         className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
                       >
-                        Delete
+                        {t.common.delete}
                       </button>
                     </>
                   )}
@@ -259,13 +266,15 @@ export default function CategoryManager({ supabase, categories }: Props) {
                       <li key={sub.id} className="flex items-center gap-2 py-1">
                         {renamingId === sub.id ? (
                           <>
-                            <TextInput value={renameValue} onChange={setRenameValue} />
-                            <Button type="button" onClick={() => void handleRenameSubmit(sub.id)}>Save</Button>
-                            <Button type="button" onClick={() => setRenamingId(null)}>Cancel</Button>
+                            <div className="min-w-0 flex-1">
+                              <TextInput value={renameValue} onChange={setRenameValue} />
+                            </div>
+                            <Button type="button" onClick={() => void handleRenameSubmit(sub.id)}>{t.common.save}</Button>
+                            <Button type="button" onClick={() => setRenamingId(null)}>{t.common.cancel}</Button>
                           </>
                         ) : (
                           <>
-                            <span className="flex-1 text-sm text-zinc-600 dark:text-zinc-400">
+                            <span className="min-w-0 flex-1 break-words text-sm text-zinc-600 dark:text-zinc-400">
                               {sub.name}
                             </span>
                             <button
@@ -273,14 +282,14 @@ export default function CategoryManager({ supabase, categories }: Props) {
                               onClick={() => { setRenamingId(sub.id); setRenameValue(sub.name); }}
                               className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
                             >
-                              Rename
+                              {t.common.rename}
                             </button>
                             <button
                               type="button"
                               onClick={() => void handleDelete(sub.id)}
                               className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
                             >
-                              Delete
+                              {t.common.delete}
                             </button>
                           </>
                         )}

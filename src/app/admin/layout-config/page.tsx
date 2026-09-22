@@ -14,6 +14,8 @@ import {
   type SlotRole,
 } from "@/lib/layout-templates";
 import type { ProductRow } from "@/types/admin";
+import { useT } from "@/context/LanguageContext";
+import { templateLabel } from "@/i18n/templates";
 import {
   activeProductsQueryOptions,
   layoutConfigQueryOptions,
@@ -21,10 +23,10 @@ import {
 } from "./_queries";
 
 // ---- Slot role visual config --------------------------------------------------------------------
-const ROLE_COLORS: Record<SlotRole, { thumb: string; label: string }> = {
-  hero:     { thumb: "bg-[var(--accent)]",                                         label: "Hero"     },
-  featured: { thumb: "bg-[color-mix(in_srgb,var(--accent)_40%,transparent)]",      label: "Featured" },
-  small:    { thumb: "bg-zinc-200 dark:bg-zinc-700",                               label: "Small"    },
+const ROLE_COLORS: Record<SlotRole, { thumb: string; labelKey: "roleHero" | "roleFeatured" | "roleSmall" }> = {
+  hero:     { thumb: "bg-[var(--accent)]",                                         labelKey: "roleHero"     as const },
+  featured: { thumb: "bg-[color-mix(in_srgb,var(--accent)_40%,transparent)]",      labelKey: "roleFeatured" as const },
+  small:    { thumb: "bg-zinc-200 dark:bg-zinc-700",                               labelKey: "roleSmall"    as const },
 };
 
 // ---- Template thumbnail (pure CSS grid, scaled down) --------------------
@@ -81,6 +83,7 @@ function ProductCombobox({
   products: ProductRow[];
   takenIds: Set<string>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const [query, setQuery] = useState("");
@@ -163,7 +166,7 @@ function ProductCombobox({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search products..."
+                placeholder={t.layouts.searchProducts}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none dark:text-zinc-200"
@@ -239,7 +242,9 @@ function SlotCard({
   takenIds: Set<string>;
   onChange: (slotId: string, productId: string | null) => void;
 }) {
-  const { thumb, label } = ROLE_COLORS[slot.role];
+  const t = useT();
+  const { thumb, labelKey } = ROLE_COLORS[slot.role];
+  const label = t.layouts[labelKey];
   return (
     <div className={`${slotSpanClasses(slot.size)} flex flex-col gap-2 rounded-xl border border-black/8 bg-white p-3 dark:border-white/10 dark:bg-zinc-900`}>
       <div className="flex items-center gap-1.5">
@@ -261,6 +266,7 @@ function SlotCard({
 
 // ---- Main page ------------------------------------------------------------------------------------------------
 export default function LayoutPage() {
+  const t = useT();
   const { supabase, adminState } = useAdminAuthContext();
   const isAuthorized = adminState.status === "authorized";
 
@@ -314,20 +320,20 @@ export default function LayoutPage() {
     <div className="mx-5 max-w-auto space-y-8 px-4 py-8">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Home page layout</h1>
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{t.layoutConfig.title}</h1>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Choose a template and pin specific products to featured slots. Unpinned slots auto-fill with the highest-discount products.
+          {t.layoutConfig.description}
         </p>
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-zinc-400">Loading&hellip;</div>
+        <div className="text-sm text-zinc-400">{t.common.loading}</div>
       ) : (
         <>
           {/* ---- Step 1: Template picker ---- */}
           <section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-zinc-400">
-              1 &mdash; Choose a template
+              {t.layoutConfig.step1}
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {LAYOUT_TEMPLATES.map((template) => {
@@ -354,7 +360,7 @@ export default function LayoutPage() {
                         </svg>
                       )}
                     </div>
-                    <p className="text-[10px] leading-snug text-zinc-400">{template.description}</p>
+                    <p className="text-[10px] leading-snug text-zinc-400">{templateLabel(t, template.id, template).description}</p>
                   </button>
                 );
               })}
@@ -365,7 +371,7 @@ export default function LayoutPage() {
               {(["hero", "featured", "small"] as SlotRole[]).map((role) => (
                 <div key={role} className="flex items-center gap-1.5">
                   <span className={`size-2.5 rounded-sm ${ROLE_COLORS[role].thumb}`} />
-                  <span className="text-xs text-zinc-500">{ROLE_COLORS[role].label}</span>
+                  <span className="text-xs text-zinc-500">{t.layouts[ROLE_COLORS[role].labelKey]}</span>
                 </div>
               ))}
             </div>
@@ -374,7 +380,7 @@ export default function LayoutPage() {
           {/* ---- Step 2: Slot assignment ---- */}
           <section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-zinc-400">
-              2 &mdash; Pin products to slots
+              {t.layoutConfig.step2}
             </h2>
             <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               <div
@@ -404,7 +410,7 @@ export default function LayoutPage() {
               </div>
             </div>
             <p className="mt-2 text-xs text-zinc-400">
-              Leave a slot as <em>auto-fill</em> to have it filled with the best-discounted active products automatically.
+              {t.layoutConfig.autoFillHintPrefix} <em>{t.layoutConfig.autoFillHintEm}</em> {t.layoutConfig.autoFillHintSuffix}
             </p>
           </section>
 
@@ -416,18 +422,18 @@ export default function LayoutPage() {
               disabled={saveConfig.isPending}
               className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {saveConfig.isPending ? <>Saving&hellip;</> : "Save & go live"}
+              {saveConfig.isPending ? t.common.saving : t.layoutConfig.saveAndGoLive}
             </button>
             {saveStatus === "saved" && (
               <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
                 <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 6 9 17l-5-5" />
                 </svg>
-                Layout is live
+                {t.layoutConfig.live}
               </span>
             )}
             {saveStatus === "error" && (
-              <span className="text-sm text-red-500">Failed to save. Try again.</span>
+              <span className="text-sm text-red-500">{t.layoutConfig.saveFailed}</span>
             )}
           </div>
         </>
