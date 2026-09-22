@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Deal } from "@/types/deals";
+import { useT } from "@/context/LanguageContext";
+import { formatPrice, formatEUR } from "@/lib/price";
+import ProductDetailModal from "@/components/home/ProductDetailModal";
 import { LAYOUT_TEMPLATES, slotSpanClasses, type TemplateSlot } from "@/lib/layout-templates";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -21,71 +24,92 @@ type ActiveLeaflet = {
 } | null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function formatEUR(value: number) {
-  return new Intl.NumberFormat("el-GR", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
 // ── Flier card ─────────────────────────────────────────────────────────────────
-function FlierCard({ deal, slot }: { deal: Deal; slot: TemplateSlot }) {
+function FlierCard({
+  deal,
+  slot,
+  onSelect,
+}: {
+  deal: Deal;
+  slot: TemplateSlot;
+  onSelect: (deal: Deal) => void;
+}) {
+  const t = useT();
   const isLarge = slot.role === "hero";
+  const isSmall = slot.role === "small";
+  const reference = deal.originalPrice ?? deal.competitorPrice;
+
   return (
-    <article className="group relative h-full w-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/8">
-      {deal.imageUrl ? (
-        <Image
-          src={deal.imageUrl}
-          alt={deal.name}
-          fill
-          sizes="(max-width: 640px) 100vw, 50vw"
-          className="object-contain p-3"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-zinc-50" />
-      )}
+    <article className="group relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-white ring-1 ring-black/[.07]">
+      <button
+        type="button"
+        onClick={() => onSelect(deal)}
+        className="absolute inset-0 z-10 cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      >
+        <span className="sr-only">{t.productDetail.viewDetails}</span>
+      </button>
 
-      {/* Scrim only at the bottom for name readability */}
-      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
+      {/* Image panel — takes all remaining height so the product reads large.
+          Previously the photo sat behind the price/name overlays, which ate
+          roughly half of it. */}
+      <div className="relative min-h-0 flex-1 bg-white">
+        {deal.imageUrl ? (
+          <Image
+            src={deal.imageUrl}
+            alt={deal.name}
+            fill
+            sizes="(max-width: 640px) 50vw, 33vw"
+            className={`object-contain ${isSmall ? "p-1.5" : "p-2.5"}`}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-zinc-50" />
+        )}
 
-      {/* Price + promo badge */}
-      <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-1.5 p-2">
-        <div className="rounded-xl bg-white/90 px-2.5 py-1.5 shadow-sm ring-1 ring-black/8 backdrop-blur-sm">
-          <div className={`font-extrabold leading-none tracking-tight text-accent ${isLarge ? "text-xl" : "text-sm"}`}>
-            {formatEUR(deal.price)}
-          </div>
-          {deal.originalPrice && (
-            <div className="mt-0.5 text-[9px] leading-none text-zinc-500 line-through">
-              {formatEUR(deal.originalPrice)}
-            </div>
-          )}
-          {deal.competitorPrice != null && deal.competitorName && (
-            <div className="mt-1 border-t border-black/8 pt-1 text-[8px] leading-none text-zinc-500">
-              {deal.competitorName}:{" "}
-              <span className="font-semibold">{formatEUR(deal.competitorPrice)}</span>
-            </div>
-          )}
-        </div>
         {deal.promoLabel && (
-          <span className="rounded-full bg-badge px-2 py-0.5 text-[9px] font-bold leading-none">
+          <span className="absolute left-1.5 top-1.5 rounded-md bg-badge px-1.5 py-0.5 text-[9px] font-bold leading-tight shadow-sm">
             {deal.promoLabel}
           </span>
         )}
       </div>
 
-      {/* Name */}
-      <div className="absolute inset-x-0 bottom-0 p-2">
-        <p className={`font-semibold leading-tight text-white drop-shadow-md line-clamp-2 ${isLarge ? "text-xs" : "text-[10px]"}`}>
+      {/* Info strip */}
+      <div className={`shrink-0 border-t border-black/[.06] ${isSmall ? "px-1.5 pb-1.5 pt-1" : "px-2 pb-2 pt-1.5"}`}>
+        <p
+          className={`line-clamp-2 font-medium leading-tight text-zinc-600 ${
+            isLarge ? "text-[11px]" : isSmall ? "text-[8px]" : "text-[9px]"
+          }`}
+        >
           {deal.name}
         </p>
+        <div className="mt-1 flex items-baseline gap-1">
+          <span
+            className={`font-extrabold leading-none tracking-tight tabular-nums text-accent ${
+              isLarge ? "text-2xl" : isSmall ? "text-[13px]" : "text-base"
+            }`}
+          >
+            {formatPrice(deal.price, deal.priceUnit, t.units.kg)}
+          </span>
+          {reference !== undefined && reference > deal.price && (
+            <span className={`leading-none text-zinc-400 line-through decoration-1 ${isSmall ? "text-[8px]" : "text-[10px]"}`}>
+              {formatEUR(reference)}
+            </span>
+          )}
+        </div>
       </div>
     </article>
   );
 }
 
 // ── Page renderer ─────────────────────────────────────────────────────────────
-function LeafletPage({ page, deals }: { page: LeafletPage; deals: Deal[] }) {
+function LeafletPage({
+  page,
+  deals,
+  onSelect,
+}: {
+  page: LeafletPage;
+  deals: Deal[];
+  onSelect: (deal: Deal) => void;
+}) {
   const template = LAYOUT_TEMPLATES.find((t) => t.id === page.template_id) ?? LAYOUT_TEMPLATES[0];
   const pinnedIds = new Set(Object.values(page.slots).filter(Boolean) as string[]);
   const autoFillDeals = deals.filter((d) => !pinnedIds.has(d.id));
@@ -99,14 +123,14 @@ function LeafletPage({ page, deals }: { page: LeafletPage; deals: Deal[] }) {
 
   return (
     <div
-      className="grid h-full w-full gap-2 p-3"
+      className="grid h-full w-full gap-1.5 p-2 sm:gap-2 sm:p-3"
       style={{ gridTemplateColumns: `repeat(${template.cols}, 1fr)` }}
     >
       {template.slots.map((slot, i) => {
         const deal = slotDeals[i];
         return (
           <div key={slot.id} className={slotSpanClasses(slot.size)}>
-            {deal ? <FlierCard deal={deal} slot={slot} /> : <div className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800" />}
+            {deal ? <FlierCard deal={deal} slot={slot} onSelect={onSelect} /> : <div className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800" />}
           </div>
         );
       })}
@@ -142,10 +166,14 @@ function FullscreenIcon({ active }: { active: boolean }) {
 
 // ── Main viewer ────────────────────────────────────────────────────────────────
 export default function LeafletViewer({ deals }: { deals: Deal[] }) {
+  const t = useT();
   const [leaflet, setLeaflet] = useState<ActiveLeaflet>(undefined as unknown as ActiveLeaflet);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("landscape");
+  // Set once the reader picks an orientation by hand, so the responsive default
+  // stops fighting them on the next resize.
+  const [orientationPinned, setOrientationPinned] = useState(false);
 
   const touchStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -154,6 +182,7 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
   // fallback (needed on iOS Safari, which doesn't support element fullscreen).
   const rootRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
   // Measures the space actually available for the page frame and fits the
   // A4 box within it (bounded by BOTH width and height), instead of deriving
@@ -167,7 +196,6 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
       .then((r) => r.json())
       .then((data: ActiveLeaflet) => {
         setLeaflet(data);
-        if (data?.orientation) setOrientation(data.orientation);
       })
       .catch(() => setLeaflet(null))
       .finally(() => setLoading(false));
@@ -192,27 +220,31 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
     };
   }, [isFullscreen]);
 
-  // On mobile, skip the manual orientation toggle and match the device's
-  // actual screen orientation automatically (like most other sites).
+  // Orientation follows the device: phones get a portrait page (and flip to
+  // landscape if the phone is turned), desktop browsers get a landscape spread.
+  // A manual pick on desktop wins from then on.
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
     const mobileMql = window.matchMedia("(max-width: 639px)");
     const portraitMql = window.matchMedia("(orientation: portrait)");
 
-    function syncMobileOrientation() {
+    function syncOrientation() {
       if (mobileMql.matches) {
+        // Phones always track the physical device orientation.
         setOrientation(portraitMql.matches ? "portrait" : "landscape");
+      } else if (!orientationPinned) {
+        setOrientation("landscape");
       }
     }
 
-    syncMobileOrientation();
-    mobileMql.addEventListener("change", syncMobileOrientation);
-    portraitMql.addEventListener("change", syncMobileOrientation);
+    syncOrientation();
+    mobileMql.addEventListener("change", syncOrientation);
+    portraitMql.addEventListener("change", syncOrientation);
     return () => {
-      mobileMql.removeEventListener("change", syncMobileOrientation);
-      portraitMql.removeEventListener("change", syncMobileOrientation);
+      mobileMql.removeEventListener("change", syncOrientation);
+      portraitMql.removeEventListener("change", syncOrientation);
     };
-  }, [loading]);
+  }, [loading, orientationPinned]);
 
   async function toggleFullscreen() {
     if (!isFullscreen) {
@@ -302,8 +334,8 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <path d="M9 9h6M9 13h4" />
             </svg>
-            <p className="text-sm">No active leaflet</p>
-            <p className="px-4 text-center text-xs opacity-60">Create and activate a layout in the admin panel</p>
+            <p className="text-sm">{t.leaflet.noActiveLeaflet}</p>
+            <p className="px-4 text-center text-xs opacity-60">{t.leaflet.noActiveLeafletHint}</p>
           </div>
         </div>
       </div>
@@ -328,19 +360,19 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
             <button
               key={o}
               type="button"
-              onClick={() => setOrientation(o)}
-              title={o === "landscape" ? "Landscape" : "Portrait"}
+              onClick={() => { setOrientation(o); setOrientationPinned(true); }}
+              title={o === "landscape" ? t.leaflet.landscape : t.leaflet.portrait}
               className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${orientation === o ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent)]" : "border-black/10 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400"}`}
             >
               <OrientIcon orientation={o} />
-              <span className="capitalize">{o}</span>
+              <span>{o === "landscape" ? t.leaflet.landscape : t.leaflet.portrait}</span>
             </button>
           ))}
         </div>
         <button
           type="button"
           onClick={() => void toggleFullscreen()}
-          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          title={isFullscreen ? t.leaflet.exitFullscreen : t.leaflet.fullscreen}
           className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-50 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400"
         >
           <FullscreenIcon active={isFullscreen} />
@@ -349,7 +381,7 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
 
       {/* A4 frame — fills the full available space; prev/next arrows overlay on top, vertically centered */}
       <div className="relative flex flex-1 min-h-0 w-full justify-center">
-        <div ref={frameWrapRef} className="flex h-full min-h-0 min-w-0 w-full items-start justify-center">
+        <div ref={frameWrapRef} className="flex h-full min-h-0 w-full min-w-0 items-center justify-center">
           <div
             ref={containerRef}
             onTouchStart={handleTouchStart}
@@ -360,14 +392,14 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
               height: frameSize.height || undefined,
             }}
           >
-            <LeafletPage page={currentPage} deals={deals} />
+            <LeafletPage page={currentPage} deals={deals} onSelect={setSelectedDeal} />
 
             <button
               type="button"
               onClick={prev}
               disabled={page === 0}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-xl border border-black/10 bg-white/90 p-2 text-zinc-500 shadow-sm backdrop-blur transition-all hover:bg-white disabled:opacity-0 dark:border-white/10 dark:bg-zinc-900/90 dark:text-zinc-400"
-              aria-label="Previous page"
+              className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-xl border border-black/10 bg-white/90 p-2 text-zinc-500 shadow-sm backdrop-blur transition-all hover:bg-white disabled:pointer-events-none disabled:opacity-0 dark:border-white/10 dark:bg-zinc-900/90 dark:text-zinc-400"
+              aria-label={t.leaflet.previousPage}
             >
               <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m15 18-6-6 6-6" />
@@ -378,8 +410,8 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
               type="button"
               onClick={next}
               disabled={page === totalPages - 1}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl border border-black/10 bg-white/90 p-2 text-zinc-500 shadow-sm backdrop-blur transition-all hover:bg-white disabled:opacity-0 dark:border-white/10 dark:bg-zinc-900/90 dark:text-zinc-400"
-              aria-label="Next page"
+              className="absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-xl border border-black/10 bg-white/90 p-2 text-zinc-500 shadow-sm backdrop-blur transition-all hover:bg-white disabled:pointer-events-none disabled:opacity-0 dark:border-white/10 dark:bg-zinc-900/90 dark:text-zinc-400"
+              aria-label={t.leaflet.nextPage}
             >
               <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m9 18 6-6-6-6" />
@@ -398,10 +430,14 @@ export default function LeafletViewer({ deals }: { deals: Deal[] }) {
               type="button"
               onClick={() => setPage(i)}
               className={`rounded-full transition-all ${i === page ? "w-5 h-2 bg-[var(--accent)]" : "size-2 bg-zinc-300 hover:bg-zinc-400 dark:bg-zinc-600 dark:hover:bg-zinc-500"}`}
-              aria-label={`Page ${i + 1}`}
+              aria-label={t.leaflet.page(i + 1)}
             />
           ))}
         </div>
+      )}
+
+      {selectedDeal && (
+        <ProductDetailModal deal={selectedDeal} onClose={() => setSelectedDeal(null)} />
       )}
     </div>
   );

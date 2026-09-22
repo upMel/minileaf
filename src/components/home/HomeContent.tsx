@@ -25,8 +25,10 @@ export default function HomeContent({ deals, source, categoryTree }: Props) {
   }
 
   return (
-    <main className="mx-auto flex w-full flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
-      <DealsGrid deals={deals} source={source} categoryTree={categoryTree} />
+    <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:py-6">
+        <DealsGrid deals={deals} source={source} categoryTree={categoryTree} />
+      </div>
     </main>
   );
 }

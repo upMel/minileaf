@@ -1,6 +1,7 @@
 "use client";
 
 import Button from "@/components/ui/Button";
+import { useT } from "@/context/LanguageContext";
 
 import type { ProductRow } from "@/types/admin";
 
@@ -21,6 +22,8 @@ export default function DeleteModal({
   onDeactivate,
   onConfirmDelete,
 }: Props) {
+  const t = useT();
+
   return (
     <div
       role="dialog"
@@ -31,34 +34,33 @@ export default function DeleteModal({
       }}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-black/10 bg-white p-4 shadow-lg dark:border-white/15 dark:bg-zinc-900"
+        className="w-full max-w-md rounded-2xl border border-black/10 bg-white p-4 shadow-lg sm:p-5 dark:border-white/15 dark:bg-zinc-900"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col gap-2">
-          <h3 className="text-base font-semibold text-black dark:text-zinc-50">Delete product?</h3>
+          <h3 className="text-base font-semibold text-black dark:text-zinc-50">{t.deleteModal.title}</h3>
           <p className="text-sm text-zinc-700 dark:text-zinc-200">
-            You are about to permanently delete{" "}
+            {t.deleteModal.aboutToDeletePrefix}{" "}
             <span className="font-medium">{product.name}</span>.
           </p>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Tip: If you might want it later, choose{" "}
-            <span className="font-medium">Deactivate</span> instead — it removes it from the
-            leaflet without losing the product.
+            {t.deleteModal.tipPrefix}{" "}
+            <span className="font-medium">{t.common.deactivate}</span> {t.deleteModal.tipSuffix}
           </p>
 
           {error ? (
             <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
           ) : null}
 
-          <div className="mt-2 flex items-center justify-end gap-2">
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
             <Button type="button" disabled={isDeleting} onClick={onCancel}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button type="button" variant="primary" disabled={isDeleting} onClick={onDeactivate}>
-              Deactivate
+              {t.common.deactivate}
             </Button>
             <Button type="button" variant="danger" disabled={isDeleting} onClick={onConfirmDelete}>
-              {isDeleting ? "Deleting…" : "Delete"}
+              {isDeleting ? t.common.deleting : t.common.delete}
             </Button>
           </div>
         </div>

@@ -10,15 +10,22 @@ function randomId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/** Validation messages, passed in localized by the caller. */
+export type UploadMessages = {
+  notAnImage: string;
+  tooLarge: string;
+};
+
 export async function uploadProductImage(
   supabase: Client,
-  file: File
+  file: File,
+  messages: UploadMessages
 ): Promise<{ url: string | null; error: string | null }> {
   if (!file.type.startsWith("image/")) {
-    return { url: null, error: "File must be an image." };
+    return { url: null, error: messages.notAnImage };
   }
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    return { url: null, error: "Image must be smaller than 8MB." };
+    return { url: null, error: messages.tooLarge };
   }
 
   const extFromName = file.name.includes(".") ? file.name.split(".").pop() : undefined;

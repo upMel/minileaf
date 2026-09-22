@@ -12,11 +12,14 @@ import MoneyInput from "@/components/inputs/MoneyInput";
 import PercentInput from "@/components/inputs/PercentInput";
 import SelectInput from "@/components/inputs/SelectInput";
 import TextInput from "@/components/inputs/TextInput";
+import TextAreaInput from "@/components/inputs/TextAreaInput";
 import { useAdminAuthContext } from "@/context/AdminAuthContext";
+import { useT } from "@/context/LanguageContext";
 import { uploadProductImage } from "@/services/storage";
 
 import type { CompetitorLookupResult } from "@/app/api/competitor-prices/route";
 import type { CategoryRow, ProductFormState, PromotionMode } from "@/types/admin";
+import type { PriceUnit } from "@/lib/price";
 
 type Props = {
   form: ProductFormState;
@@ -47,6 +50,7 @@ export default function ProductFormCard({
   hideSubmitButton = false,
 }: Props) {
   const set = onChange;
+  const t = useT();
   const { supabase } = useAdminAuthContext();
 
   const roots = categories.filter((c) => c.parent_id === null);
@@ -67,9 +71,12 @@ export default function ProductFormCard({
     if (!file || !supabase) return;
     setIsUploading(true);
     setUploadError(null);
-    const { url, error } = await uploadProductImage(supabase, file);
+    const { url, error } = await uploadProductImage(supabase, file, {
+      notAnImage: t.errors.fileMustBeImage,
+      tooLarge: t.errors.imageTooLarge,
+    });
     if (error || !url) {
-      setUploadError(error ?? "Upload failed.");
+      setUploadError(error ?? t.productForm.uploadFailed);
     } else {
       set({ imageUrl: url });
     }
@@ -86,9 +93,9 @@ export default function ProductFormCard({
       const res = await fetch(`/api/competitor-prices?barcode=${encodeURIComponent(b)}`);
       const data: CompetitorLookupResult = await res.json();
       setLookupResult(data);
-      if (data.prices.length === 0) setLookupError("No competitor prices found for this barcode.");
+      if (data.prices.length === 0) setLookupError(t.productForm.noPricesFound);
     } catch {
-      setLookupError("Lookup failed. Try again.");
+      setLookupError(t.productForm.lookupFailed);
     } finally {
       setIsLooking(false);
     }
@@ -98,9 +105,9 @@ export default function ProductFormCard({
     <Card style={inDrawer ? { border: "none", borderRadius: 0, background: "transparent", boxShadow: "none", padding: 0 } : undefined}>
       {!inDrawer && (
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-black dark:text-zinc-50">Products</h2>
+          <h2 className="text-base font-semibold text-black dark:text-zinc-50">{t.productForm.products}</h2>
           <Button type="button" onClick={onNew}>
-            New
+            {t.productForm.new}
           </Button>
         </div>
       )}
@@ -108,24 +115,24 @@ export default function ProductFormCard({
       <form id={formId} onSubmit={onSubmit} className={inDrawer ? "p-4" : "mt-4"}>
         <div className="grid grid-cols-1 gap-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Barcode">
+            <Field label={t.productForm.barcode}>
               <TextInput
                 value={form.barcode}
                 onChange={(v) => set({ barcode: v })}
-                placeholder="Optional"
+                placeholder={t.common.optional}
               />
             </Field>
-            <Field label="Category">
+            <Field label={t.productForm.category}>
               <SelectInput
                 value={form.categoryId}
                 onChange={(v) => set({ categoryId: v })}
               >
-                <option value="">— select —</option>
+                <option value="">{t.productForm.selectPlaceholder}</option>
                 {roots.map((root) => {
                   const subs = childrenOf(root.id);
                   return subs.length > 0 ? (
                     <optgroup key={root.id} label={root.name}>
-                      <option value={root.id}>{root.name} (all)</option>
+                      <option value={root.id}>{t.productForm.allSuffix(root.name)}</option>
                       {subs.map((sub) => (
                         <option key={sub.id} value={sub.id}>
                           {sub.name}
@@ -143,30 +150,62 @@ export default function ProductFormCard({
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Name">
+            <Field label={t.productForm.name}>
               <TextInput value={form.name} onChange={(v) => set({ name: v })} required />
             </Field>
-            <Field label="Supplier">
-              <TextInput value={form.supplier} onChange={(v) => set({ supplier: v })} placeholder="Optional" />
+            <Field label={t.productForm.supplier}>
+              <TextInput value={form.supplier} onChange={(v) => set({ supplier: v })} placeholder={t.common.optional} />
             </Field>
           </div>
 
+          <Field label={t.productForm.description}>
+            <TextAreaInput
+              value={form.description}
+              onChange={(v) => set({ description: v })}
+              placeholder={t.productForm.descriptionPlaceholder}
+              rows={3}
+            />
+          </Field>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Price">
+            <Field label={t.productForm.price}>
               <MoneyInput value={form.price} onChange={(v) => set({ price: v })} required />
             </Field>
-            <div />
+            <Field label={t.productForm.pricedPer}>
+              <div className="flex h-[38px] items-center overflow-hidden rounded-xl border border-black/10 bg-white dark:border-white/15 dark:bg-black">
+                {(["piece", "kg"] as PriceUnit[]).map((unit, i) => {
+                  const active = form.priceUnit === unit;
+                  return (
+                    <button
+                      key={unit}
+                      type="button"
+                      onClick={() => set({ priceUnit: unit })}
+                      className={`h-full flex-1 text-sm transition-colors ${
+                        i > 0 ? "border-l border-black/10 dark:border-white/15" : ""
+                      } ${
+                        active
+                          ? "font-medium"
+                          : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-white/5"
+                      }`}
+                      style={active ? { backgroundColor: "var(--accent)", color: "var(--accent-fg)" } : undefined}
+                    >
+                      {unit === "piece" ? t.productForm.perPiece : t.productForm.perKg}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Competitor name">
+            <Field label={t.productForm.competitorName}>
               <TextInput
                 value={form.competitorName}
                 onChange={(v) => set({ competitorName: v })}
-                placeholder="Optional"
+                placeholder={t.common.optional}
               />
             </Field>
-            <Field label="Competitor price">
+            <Field label={t.productForm.competitorPrice}>
               <MoneyInput
                 value={form.competitorPrice}
                 onChange={(v) => set({ competitorPrice: v })}
@@ -175,7 +214,7 @@ export default function ProductFormCard({
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Image">
+            <Field label={t.productForm.image}>
               <div className="flex items-center gap-2">
                 {form.imageUrl ? (
                   <Image
@@ -192,7 +231,7 @@ export default function ProductFormCard({
                 <TextInput
                   value={form.imageUrl}
                   onChange={(v) => set({ imageUrl: v })}
-                  placeholder="Paste image URL…"
+                  placeholder={t.productForm.pasteImageUrl}
                   type="url"
                   inputMode="url"
                 />
@@ -225,7 +264,7 @@ export default function ProductFormCard({
                   disabled={isUploading || !supabase}
                   className="text-xs"
                 >
-                  {isUploading ? "Uploading…" : "Upload photo"}
+                  {isUploading ? t.productForm.uploading : t.productForm.uploadPhoto}
                 </Button>
                 <Button
                   type="button"
@@ -233,12 +272,12 @@ export default function ProductFormCard({
                   disabled={isUploading || !supabase}
                   className="text-xs"
                 >
-                  Take photo
+                  {t.productForm.takePhoto}
                 </Button>
               <Checkbox
                 checked={form.isActive}
                 onChange={(v) => set({ isActive: v })}
-                label="Active"
+                label={t.common.active}
               />
               {!hideSubmitButton && (
                 <Button
@@ -247,7 +286,7 @@ export default function ProductFormCard({
                   disabled={isSaving}
                   className="ml-auto rounded-xl"
                 >
-                  {isSaving ? "Saving…" : form.id ? "Save" : "Add"}
+                  {isSaving ? t.common.saving : form.id ? t.common.save : t.common.add}
                 </Button>
               )}
             </div>
@@ -259,7 +298,7 @@ export default function ProductFormCard({
 
           <details className="group mt-2 rounded-2xl border border-black/10 bg-zinc-50 dark:border-white/15 dark:bg-black">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 text-sm font-semibold text-black outline-none hover:bg-black/[.03] focus-visible:ring-2 focus-visible:ring-black/10 dark:text-zinc-50 dark:hover:bg-white/5 dark:focus-visible:ring-white/10">
-              <span>Promotion</span>
+              <span>{t.productForm.promotion}</span>
               <svg
                 aria-hidden="true"
                 viewBox="0 0 20 20"
@@ -277,26 +316,26 @@ export default function ProductFormCard({
             <div className="px-3 pb-3">
               {/* Row 1: Type + conditional value field */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="Type">
+                <Field label={t.productForm.type}>
                   <SelectInput
                     value={form.promotionMode}
                     onChange={(v) => set({ promotionMode: v as PromotionMode })}
                   >
-                    <option value="NONE">None</option>
-                    <option value="PERCENT">Percent discount</option>
-                    <option value="PRICE">Promo price</option>
-                    <option value="BOGO">BOGO (1+1)</option>
+                    <option value="NONE">{t.common.none}</option>
+                    <option value="PERCENT">{t.productForm.percentDiscount}</option>
+                    <option value="PRICE">{t.productForm.promoPrice}</option>
+                    <option value="BOGO">{t.productForm.bogo}</option>
                   </SelectInput>
                 </Field>
                 {form.promotionMode === "PERCENT" ? (
-                  <Field label="Percent off">
+                  <Field label={t.productForm.percentOff}>
                     <PercentInput
                       value={form.percentOff}
                       onChange={(v) => set({ percentOff: v })}
                     />
                   </Field>
                 ) : form.promotionMode === "PRICE" ? (
-                  <Field label="Promo price">
+                  <Field label={t.productForm.promoPrice}>
                     <MoneyInput
                       value={form.promoPrice}
                       onChange={(v) => set({ promoPrice: v })}
@@ -310,7 +349,7 @@ export default function ProductFormCard({
               {/* Row 2: Date window — full width for space */}
               <div className="mt-3">
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                  Date window
+                  {t.productForm.dateWindow}
                 </label>
                 <DateRangePickerInput
                   startValue={form.promoStartsAt}
@@ -322,11 +361,11 @@ export default function ProductFormCard({
               </div>
 
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="Label">
+                <Field label={t.productForm.label}>
                   <TextInput
                     value={form.promoLabel}
                     onChange={(v) => set({ promoLabel: v })}
-                    placeholder="Optional (e.g. -30%, 1+1)"
+                    placeholder={t.productForm.labelPlaceholder}
                     disabled={form.promotionMode === "NONE"}
                   />
                 </Field>
@@ -334,7 +373,7 @@ export default function ProductFormCard({
                   <Checkbox
                     checked={form.promoIsActive}
                     onChange={(v) => set({ promoIsActive: v })}
-                    label="Promotion active"
+                    label={t.productForm.promotionActive}
                     disabled={form.promotionMode === "NONE"}
                   />
                 </div>
@@ -344,7 +383,7 @@ export default function ProductFormCard({
 
           <details className="group mt-2 rounded-2xl border border-black/10 bg-zinc-50 dark:border-white/15 dark:bg-black">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 text-sm font-semibold text-black outline-none hover:bg-black/[.03] focus-visible:ring-2 focus-visible:ring-black/10 dark:text-zinc-50 dark:hover:bg-white/5 dark:focus-visible:ring-white/10">
-              <span>Competitor price lookup</span>
+              <span>{t.productForm.competitorLookup}</span>
               <svg
                 aria-hidden="true"
                 viewBox="0 0 20 20"
@@ -361,14 +400,14 @@ export default function ProductFormCard({
 
             <div className="px-3 pb-3">
               <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-                Looks up the <strong>Barcode</strong> field above across 11 Greek supermarkets (e-katanalotis.gov.gr). Data is refreshed daily.
+                {t.productForm.lookupHintPrefix} <strong>{t.productForm.barcode}</strong> {t.productForm.lookupHintSuffix}
               </p>
               <Button
                 type="button"
                 onClick={handleLookup}
                 disabled={isLooking || !form.barcode.trim()}
               >
-                {isLooking ? "Looking up…" : "Look up barcode"}
+                {isLooking ? t.productForm.lookingUp : t.productForm.lookUpBarcode}
               </Button>
 
               {lookupError ? (
@@ -377,7 +416,7 @@ export default function ProductFormCard({
 
               {lookupResult && (lookupResult.name || lookupResult.category || lookupResult.image_url) ? (
                 <div className="mt-3 rounded-xl border border-black/10 p-3 dark:border-white/10">
-                  <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">Found on e-katanalotis</p>
+                  <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">{t.productForm.foundOnSource}</p>
                   {lookupResult.image_url ? (
                     <div className="relative mt-2 h-24 w-full rounded-lg border border-black/10 bg-zinc-100 dark:border-white/10 dark:bg-zinc-800">
                       <Image
@@ -386,18 +425,18 @@ export default function ProductFormCard({
                         fill
                         sizes="(max-width: 768px) 100vw, 33vw"
                         className="object-contain"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).alt = "Image unavailable"; }}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).alt = t.productForm.imageUnavailable; }}
                       />
                     </div>
                   ) : null}
                   {lookupResult.name ? (
                     <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">
-                      <span className="font-medium text-zinc-800 dark:text-zinc-200">Name: </span>{lookupResult.name}
+                      <span className="font-medium text-zinc-800 dark:text-zinc-200">{t.productForm.nameLabel}</span>{lookupResult.name}
                     </p>
                   ) : null}
                   {lookupResult.category ? (
                     <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-                      <span className="font-medium text-zinc-800 dark:text-zinc-200">Category: </span>
+                      <span className="font-medium text-zinc-800 dark:text-zinc-200">{t.productForm.categoryLabel}</span>
                       {lookupResult.sub_category
                         ? `${lookupResult.category} › ${lookupResult.sub_category}`
                         : lookupResult.category}
@@ -430,7 +469,7 @@ export default function ProductFormCard({
                     }}
                     className="mt-2 rounded-lg px-2 py-0.5 text-xs font-medium text-[color:var(--accent)] hover:bg-[color:var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                   >
-                    Apply name, category &amp; image →
+                    {t.productForm.applyFromLookup}
                   </button>
                 </div>
               ) : null}
@@ -440,8 +479,8 @@ export default function ProductFormCard({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-black/10 bg-black/[.03] dark:border-white/10 dark:bg-white/[.03]">
-                        <th className="px-3 py-1.5 text-left font-semibold text-zinc-700 dark:text-zinc-300">Supermarket</th>
-                        <th className="px-3 py-1.5 text-right font-semibold text-zinc-700 dark:text-zinc-300">Price</th>
+                        <th className="px-3 py-1.5 text-left font-semibold text-zinc-700 dark:text-zinc-300">{t.productForm.supermarket}</th>
+                        <th className="px-3 py-1.5 text-right font-semibold text-zinc-700 dark:text-zinc-300">{t.productForm.price}</th>
                         <th className="px-3 py-1.5"></th>
                       </tr>
                     </thead>
@@ -461,7 +500,7 @@ export default function ProductFormCard({
                               onClick={() => set({ competitorName: p.merchant, competitorPrice: String(p.price) })}
                               className="rounded-lg px-2 py-0.5 text-xs font-medium text-[color:var(--accent)] hover:bg-[color:var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                             >
-                              Use
+                              {t.productForm.use}
                             </button>
                           </td>
                         </tr>

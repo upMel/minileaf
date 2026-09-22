@@ -6,11 +6,14 @@ import Image from "next/image";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import type { ProductRow, PromotionRow } from "@/types/admin";
+import { useT } from "@/context/LanguageContext";
+import { formatPrice } from "@/lib/price";
+import type { Dictionary } from "@/i18n/en";
 
 const PAGE_SIZE = 20;
 
-function promoSummary(promo: PromotionRow): string {
-  if (!promo.is_active) return "Inactive";
+function promoSummary(promo: PromotionRow, t: Dictionary): string {
+  if (!promo.is_active) return t.common.inactive;
   if (promo.label) return promo.label;
   if (promo.type === "BOGO") return "1+1";
   if (promo.type === "PERCENT" && typeof promo.percent_off === "number")
@@ -50,6 +53,7 @@ export default function ProductList({
   totalCount,
   onNew,
 }: Props) {
+  const t = useT();
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(products.length / PAGE_SIZE));
@@ -59,15 +63,15 @@ export default function ProductList({
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-black dark:text-zinc-50">All products</h3>
+        <h3 className="text-base font-semibold text-black dark:text-zinc-50">{t.products.allProducts}</h3>
         <div className="flex items-center gap-2">
           {onNew && (
             <Button type="button" variant="primary" onClick={onNew}>
-              + New
+              {t.products.new}
             </Button>
           )}
           <Button type="button" onClick={onRefresh}>
-            Refresh
+            {t.common.refresh}
           </Button>
         </div>
       </div>
@@ -76,7 +80,7 @@ export default function ProductList({
 
       {typeof totalCount === "number" && products.length !== totalCount && (
         <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-          {products.length} of {totalCount} products
+          {t.products.countOf(products.length, totalCount)}
         </p>
       )}
 
@@ -85,7 +89,7 @@ export default function ProductList({
       ) : null}
 
       {isLoading ? (
-        <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-200">Loading…</div>
+        <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-200">{t.common.loading}</div>
       ) : null}
 
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -95,9 +99,9 @@ export default function ProductList({
             p.category ?? null,
             p.barcode ? `#${p.barcode}` : null,
             typeof p.competitor_price === "number"
-              ? `${p.competitor_name ?? "Competitor"}: €${Number(p.competitor_price).toFixed(2)}`
+              ? `${p.competitor_name ?? t.products.competitor}: €${Number(p.competitor_price).toFixed(2)}`
               : null,
-            promo ? `Promo: ${promoSummary(promo)}` : null,
+            promo ? `${t.products.promo}: ${promoSummary(promo, t)}` : null,
           ].filter(Boolean).join(" · ");
 
           return (
@@ -124,13 +128,13 @@ export default function ProductList({
                   </span>
                   {!p.is_active && (
                     <span className="shrink-0 rounded-full border border-black/10 px-1.5 py-px text-[10px] font-medium text-zinc-500 dark:border-white/15 dark:text-zinc-400">
-                      Inactive
+                      {t.common.inactive}
                     </span>
                   )}
                 </div>
                 <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    €{Number(p.price).toFixed(2)}
+                    {formatPrice(Number(p.price), p.price_unit, t.units.kg)}
                   </span>
                   {meta ? ` · ${meta}` : null}
                 </div>
@@ -141,7 +145,7 @@ export default function ProductList({
                 {/* Toggle active */}
                 <button
                   type="button"
-                  title={p.is_active ? "Deactivate" : "Activate"}
+                  title={p.is_active ? t.common.deactivate : t.common.activate}
                   onClick={() => onToggleActive(p)}
                   className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-200"
                 >
@@ -154,7 +158,7 @@ export default function ProductList({
                 {/* Edit */}
                 <button
                   type="button"
-                  title="Edit"
+                  title={t.common.edit}
                   onClick={() => onEdit(p)}
                   className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-200"
                 >
@@ -163,7 +167,7 @@ export default function ProductList({
                 {/* Delete */}
                 <button
                   type="button"
-                  title="Delete"
+                  title={t.common.delete}
                   onClick={() => onDelete(p)}
                   className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                 >
@@ -175,7 +179,7 @@ export default function ProductList({
         })}
 
         {!isLoading && products.length === 0 ? (
-          <div className="text-sm text-zinc-700 dark:text-zinc-200">No products found.</div>
+          <div className="text-sm text-zinc-700 dark:text-zinc-200">{t.products.empty}</div>
         ) : null}
       </div>
 
@@ -188,10 +192,10 @@ export default function ProductList({
             disabled={currentPage === 1}
             className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:text-zinc-300 dark:hover:bg-white/5"
           >
-            ← Prev
+            {t.common.prev}
           </button>
           <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            Page {currentPage} of {totalPages} · {products.length} products
+            {t.products.pageOf(currentPage, totalPages, products.length)}
           </span>
           <button
             type="button"
@@ -199,7 +203,7 @@ export default function ProductList({
             disabled={currentPage === totalPages}
             className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:text-zinc-300 dark:hover:bg-white/5"
           >
-            Next →
+            {t.common.next}
           </button>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import Button from "@/components/ui/Button";
+import { useT } from "@/context/LanguageContext";
 
 type Props = {
   title: string;
@@ -14,11 +15,13 @@ type Props = {
 export default function ConfirmModal({
   title,
   description,
-  confirmLabel = "Delete",
+  confirmLabel,
   isConfirming = false,
   onCancel,
   onConfirm,
 }: Props) {
+  const t = useT();
+
   return (
     <div
       role="dialog"
@@ -37,12 +40,12 @@ export default function ConfirmModal({
           {description && (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">{description}</p>
           )}
-          <div className="mt-1 flex items-center justify-end gap-2">
+          <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
             <Button type="button" disabled={isConfirming} onClick={onCancel}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button type="button" variant="danger" disabled={isConfirming} onClick={onConfirm}>
-              {isConfirming ? "Deleting…" : confirmLabel}
+              {isConfirming ? t.common.deleting : (confirmLabel ?? t.common.delete)}
             </Button>
           </div>
         </div>

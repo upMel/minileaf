@@ -11,7 +11,11 @@ const PALETTES = [
 
 type Palette = (typeof PALETTES)[number]["id"];
 
-export default function ThemeToggle() {
+/**
+ * @param showPalette  Brand-colour swatches. Admin only — customers shouldn't be
+ *                     able to re-skin the shop.
+ */
+export default function ThemeToggle({ showPalette = true }: { showPalette?: boolean } = {}) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [palette, setPalette] = useState<Palette>("red"); // consistent default on server + client
@@ -45,8 +49,8 @@ export default function ThemeToggle() {
 
   return (
     <div className="flex items-center gap-2">
-      {/* Palette swatches + divider — hidden on mobile */}
-      <div className="hidden sm:flex items-center gap-2">
+      {/* Palette swatches + divider — hidden on mobile, and admin-only */}
+      <div className={`${showPalette ? "hidden sm:flex" : "hidden"} items-center gap-2`}>
         {PALETTES.map((p) => (
           <button
             key={p.id}
@@ -67,7 +71,7 @@ export default function ThemeToggle() {
       <button
         onClick={toggleDark}
         title={resolvedTheme === "dark" ? "Switch to light" : "Switch to dark"}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/80 text-zinc-600 transition hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-black/10 bg-white text-zinc-600 transition hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
       >
         {resolvedTheme === "dark" ? (
           /* Sun icon */

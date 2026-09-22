@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import SearchBar from "@/components/SearchBar";
 import { useAdminAuthContext } from "@/context/AdminAuthContext";
+import { useT } from "@/context/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useProductForm } from "@/hooks/useProductForm";
 import { useSearchFilters } from "@/hooks/useSearchFilters";
@@ -21,6 +22,7 @@ const USE_DRAWER = false;
 
 export default function ProductsPage() {
   const { supabase, adminState } = useAdminAuthContext();
+  const t = useT();
   const isAuthorized = adminState.status === "authorized";
 
   const { products, promotionsByProductId, isLoading, error, refresh, toggleActive, deactivate, remove } =
@@ -126,7 +128,7 @@ export default function ProductsPage() {
   return (
     <div className="relative flex h-full">
       {/* Main content */}
-      <div className={`flex-1 p-6 transition-all duration-300 ${USE_DRAWER && formOpen ? "sm:mr-[440px]" : ""}`}>
+      <div className={`flex-1 p-4 sm:p-6 transition-all duration-300 ${USE_DRAWER && formOpen ? "sm:mr-[440px]" : ""}`}>
         <ProductList
           products={filteredProducts}
           promotionsByProductId={promotionsByProductId}
@@ -144,7 +146,6 @@ export default function ProductsPage() {
               categoryTree={activeCategoryTree}
               onChange={setFilters}
               showStatus
-              placeholder="Search products…"
             />
           }
         />
@@ -175,13 +176,13 @@ export default function ProductsPage() {
             {/* Drawer header */}
             <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
               <span className="text-sm font-semibold text-black dark:text-zinc-50">
-                {form.id ? "Edit product" : "New product"}
+                {form.id ? t.productForm.editProduct : t.productForm.newProduct}
               </span>
               <button
                 type="button"
                 onClick={closeForm}
                 className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-200"
-                aria-label="Close"
+                aria-label={t.common.close}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
