@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -23,6 +24,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
 }
 
 export async function PUT(req: NextRequest, { params }: Params) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const { id } = await params;
   const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
@@ -59,7 +62,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
   return NextResponse.json(data);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const { id } = await params;
   const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });

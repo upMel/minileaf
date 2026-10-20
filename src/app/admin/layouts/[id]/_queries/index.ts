@@ -1,5 +1,6 @@
 "use client";
 
+import { adminFetch } from "@/lib/admin-fetch";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -29,7 +30,7 @@ export function layoutDetailQueryOptions(layoutId: string | null, isAuthorized: 
   return queryOptions<Layout>({
     queryKey: ["layout", layoutId],
     queryFn: async () => {
-      const res = await fetch(`/api/layouts/${layoutId}`);
+      const res = await adminFetch(`/api/layouts/${layoutId}`);
       if (!res.ok) throw new Error("Layout not found");
       return res.json() as Promise<Layout>;
     },
@@ -60,7 +61,7 @@ export function useUpdateLayout(layoutId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Partial<Pick<Layout, "name" | "orientation">>) =>
-      fetch(`/api/layouts/${layoutId}`, {
+      adminFetch(`/api/layouts/${layoutId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -77,7 +78,7 @@ export function useAddPage(layoutId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (templateId: string) =>
-      fetch(`/api/layouts/${layoutId}/pages`, {
+      adminFetch(`/api/layouts/${layoutId}/pages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ template_id: templateId }),
@@ -93,7 +94,7 @@ export function useDeletePage(layoutId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (pageId: string) =>
-      fetch(`/api/layouts/${layoutId}/pages/${pageId}`, { method: "DELETE" }).then((r) => {
+      adminFetch(`/api/layouts/${layoutId}/pages/${pageId}`, { method: "DELETE" }).then((r) => {
         if (!r.ok) throw new Error("Failed to delete page");
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["layout", layoutId] }),
@@ -112,7 +113,7 @@ export function useSavePage(layoutId: string | null) {
       templateId: string;
       slots: Record<string, string | null>;
     }) =>
-      fetch(`/api/layouts/${layoutId}/pages/${pageId}`, {
+      adminFetch(`/api/layouts/${layoutId}/pages/${pageId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ template_id: templateId, slots }),
@@ -142,12 +143,12 @@ export function useMovePage(layoutId: string | null) {
       if (targetIdx < 0 || targetIdx >= sorted.length) throw new Error("Out of bounds");
       const [aOrder, bOrder] = [sorted[idx].page_order, sorted[targetIdx].page_order];
       return Promise.all([
-        fetch(`/api/layouts/${layoutId}/pages/${sorted[idx].id}`, {
+        adminFetch(`/api/layouts/${layoutId}/pages/${sorted[idx].id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ page_order: bOrder }),
         }),
-        fetch(`/api/layouts/${layoutId}/pages/${sorted[targetIdx].id}`, {
+        adminFetch(`/api/layouts/${layoutId}/pages/${sorted[targetIdx].id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ page_order: aOrder }),

@@ -1,62 +1,34 @@
 "use client";
 
-import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 
 import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { fetchCategories } from "@/services/categories";
-import { deleteProduct, fetchProducts, toggleProductActive } from "@/services/products";
-import { fetchPromotionsForProducts } from "@/services/promotions";
-import type { CategoryRow, ProductRow, PromotionRow } from "@/types/admin";
+import { fetchProducts } from "@/services/products";
+import type { CategoryRow, ProductRow } from "@/types/admin";
 
 type Client = NonNullable<ReturnType<typeof createSupabaseBrowserClient>>;
 
-// ── Queries ───────────────────────────────────────────────────────────────────
+export const ADMIN_PRODUCTS_KEY = ["admin-products"] as const;
 
-/** Categories for the product form dropdown. Shared query key with the categories page. */
-export function categoriesQueryOptions(supabase: Client, isAuthorized: boolean) {
+/** Categories for the editor and the list. Shared query key with the categories page. */
+export function categoriesQueryOptions(supabase: Client, enabled: boolean) {
   return queryOptions<CategoryRow[]>({
     queryKey: ["categories"],
-    queryFn: () => fetchCategories(supabase).then((r) => r.data),
-    enabled: isAuthorized,
-  });
-}
-
-/** Products list with promotions. Mirrors the logic in useProducts.ts. */
-export function productsQueryOptions(supabase: Client, enabled: boolean) {
-  return queryOptions<{ products: ProductRow[]; promotionsByProductId: Record<string, PromotionRow | undefined> }>({
-    queryKey: ["products"],
     queryFn: async () => {
-      const { data: rows, error: fetchError } = await fetchProducts(supabase);
-      if (fetchError) throw new Error(fetchError);
-      const { data: promos } = await fetchPromotionsForProducts(supabase, rows.map((p) => p.id));
-      return { products: rows, promotionsByProductId: promos };
+      const { data, error } = await fetchCategories(supabase);
+      if (error) throw new Error(error);
+      return data;
     },
     enabled,
   });
 }
 
-// ── Mutations ─────────────────────────────────────────────────────────────────
-
-export function useToggleProductActive(supabase: Client) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (p: ProductRow) => toggleProductActive(supabase, p.id, !p.is_active),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
-  });
-}
-
-export function useDeactivateProduct(supabase: Client) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => toggleProductActive(supabase, id, false),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
-  });
-}
-
-export function useDeleteProduct(supabase: Client) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => deleteProduct(supabase, id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+/** Every product, hidden ones included, newest changes first. */
+export function adminProductsQueryOptions(supabase: Client, enabled: boolean) {
+  return queryOptions<ProductRow[]>({
+    queryKey: ADMIN_PRODUCTS_KEY,
+    queryFn: () => fetchProducts(supabase),
+    enabled,
   });
 }

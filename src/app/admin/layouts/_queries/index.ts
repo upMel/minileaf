@@ -1,5 +1,6 @@
 "use client";
 
+import { adminFetch } from "@/lib/admin-fetch";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export type Layout = {
@@ -14,7 +15,7 @@ export type Layout = {
 
 export const layoutsQueryOptions = queryOptions<Layout[]>({
   queryKey: ["layouts"],
-  queryFn: (): Promise<Layout[]> => fetch("/api/layouts").then((r) => r.json()),
+  queryFn: (): Promise<Layout[]> => adminFetch("/api/layouts").then((r) => r.json()),
 });
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -23,7 +24,7 @@ export function useCreateLayout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: { name: string; orientation: "portrait" | "landscape" }) =>
-      fetch("/api/layouts", {
+      adminFetch("/api/layouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -42,7 +43,7 @@ export function useUpdateLayout() {
       id,
       ...data
     }: { id: string } & Partial<Pick<Layout, "name" | "orientation" | "is_active">>) =>
-      fetch(`/api/layouts/${id}`, {
+      adminFetch(`/api/layouts/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -58,7 +59,7 @@ export function useDeleteLayout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      fetch(`/api/layouts/${id}`, { method: "DELETE" }).then((r) => {
+      adminFetch(`/api/layouts/${id}`, { method: "DELETE" }).then((r) => {
         if (!r.ok) throw new Error("Failed to delete layout");
       }),
     onSuccess: () => queryClient.invalidateQueries(layoutsQueryOptions),

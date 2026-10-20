@@ -8,7 +8,7 @@ export async function fetchCategories(
 ): Promise<{ data: CategoryRow[]; error: string | null }> {
   const { data, error } = await supabase
     .from("categories")
-    .select("id,name,parent_id,sort_order")
+    .select("id,name,parent_id,sort_order,image_url")
     .order("sort_order")
     .order("name");
   if (error || !data) return { data: [], error: error?.message ?? "Failed to load categories." };

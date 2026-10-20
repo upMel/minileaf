@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 import { LAYOUT_TEMPLATES } from "@/lib/layout-templates";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const { id: layout_id } = await params;
   const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });

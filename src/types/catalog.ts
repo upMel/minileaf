@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 
+import { safeImageUrl } from "@/lib/image-url";
 import { toPriceUnit, type PriceUnit } from "@/lib/price";
 
 // ── Products: the public `catalog` view ─────────────────────────────────────
@@ -61,7 +62,7 @@ export function toProduct(row: CatalogRow): Product {
     name: row.name,
     description: row.description ?? undefined,
     size: row.size ?? undefined,
-    imageUrl: row.image_url ?? undefined,
+    imageUrl: safeImageUrl(row.image_url),
     price: Number(row.price),
     priceUnit: toPriceUnit(row.price_unit),
     isSuperPrice: row.is_super_price,
@@ -116,7 +117,7 @@ export function buildCategoryTree(rows: CategoryRow[]): Category[] {
     .map((r) => ({
       id: r.id,
       name: r.name,
-      imageUrl: r.image_url ?? undefined,
+      imageUrl: safeImageUrl(r.image_url),
       sortOrder: r.sort_order,
       subcategories: (subsByParent.get(r.id) ?? []).sort(bySortThenName),
     }))
@@ -155,7 +156,7 @@ export function toOfferGroup(row: OfferGroupRow): OfferGroup {
   return {
     id: row.id,
     name: row.name,
-    imageUrl: row.image_url ?? undefined,
+    imageUrl: safeImageUrl(row.image_url),
     sortOrder: row.sort_order,
     showSubcategories: row.show_subcategories,
     isVisible: row.is_visible,
@@ -224,8 +225,8 @@ export function parseStoreInfo(value: unknown): StoreInfo {
 
 // ── Banner (table banner_pages) ─────────────────────────────────────────────
 
-/** An image URL we're willing to render: bundled (/kaimakidis/…) or https. */
-const ImageUrlSchema = z.string().refine((u) => u.startsWith("/") || /^https:\/\//.test(u), "Invalid image URL");
+/** An image URL we're willing to render: the site's own files or https. */
+const ImageUrlSchema = z.string().refine((u) => safeImageUrl(u) === u, "Invalid image URL");
 
 export const BANNER_LINK_KINDS = ["product", "category", "offer_group", "deals", "flyer", "url"] as const;
 export type BannerLinkKind = (typeof BANNER_LINK_KINDS)[number];
@@ -346,7 +347,8 @@ function parseProductSlots(value: unknown): Record<string, string | null> {
 /** Returns null for a row that can't be shown (e.g. an image page with no image). */
 export function toFlyerPage(row: FlyerPageRow): FlyerPage | null {
   if (row.kind === "image") {
-    return row.image_url ? { id: row.id, order: row.page_order, kind: "image", imageUrl: row.image_url } : null;
+    const imageUrl = safeImageUrl(row.image_url);
+    return imageUrl ? { id: row.id, order: row.page_order, kind: "image", imageUrl } : null;
   }
   if (!row.template_id) return null;
   return {

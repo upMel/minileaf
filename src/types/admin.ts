@@ -1,19 +1,21 @@
 import type { PriceUnit } from "@/lib/price";
 
+/** A `products` row as the admin reads it (hidden products included). */
 export type ProductRow = {
   id: string;
   barcode: string | null;
   name: string;
   description: string | null;
-  supplier: string | null;
-  category: string | null;       // legacy free-text, kept for display
-  category_id: string | null;   // FK to categories.id
+  size: string | null;
+  category_id: string | null; // a top-level category or a subcategory
   image_url: string | null;
   competitor_name: string | null;
   competitor_price: number | null;
   price: number;
   price_unit: PriceUnit;
-  is_active: boolean;
+  is_super_price: boolean;
+  is_bogo: boolean;
+  is_active: boolean; // "show in the catalogue"
   updated_at: string;
 };
 
@@ -22,105 +24,54 @@ export type CategoryRow = {
   name: string;
   parent_id: string | null;
   sort_order: number;
+  image_url?: string | null;
 };
 
-export type PromotionType = "PERCENT" | "PRICE" | "BOGO";
-
-export type PromotionRow = {
-  id: string;
-  product_id: string;
-  type: PromotionType;
-  percent_off: number | null;
-  promo_price: number | null;
-  is_bogo: boolean;
-  label: string | null;
-  starts_at: string | null;
-  ends_at: string | null;
-  is_active: boolean;
-  updated_at: string;
-};
-
-export type PromotionMode = "NONE" | PromotionType;
-
+/** The product editor's fields, as typed (strings for the number inputs). */
 export type ProductFormState = {
   id?: string;
   barcode: string;
   name: string;
   description: string;
-  supplier: string;
-  categoryId: string;  // UUID from categories.id
+  size: string;
+  categoryId: string; // top-level
+  subcategoryId: string; // "" = none
   imageUrl: string;
-  competitorName: string;
-  competitorPrice: string;
   price: string;
   priceUnit: PriceUnit;
+  isSuperPrice: boolean;
+  isBogo: boolean;
   isActive: boolean;
-
-  promotionId?: string;
-  promotionMode: PromotionMode;
-  percentOff: string;
-  promoPrice: string;
-  promoLabel: string;
-  promoStartsAt: string;
-  promoEndsAt: string;
-  promoIsActive: boolean;
+  competitorName: string;
+  competitorPrice: string;
 };
 
-export const emptyForm: ProductFormState = {
+export const emptyProductForm: ProductFormState = {
   barcode: "",
   name: "",
   description: "",
-  supplier: "",
+  size: "",
   categoryId: "",
+  subcategoryId: "",
   imageUrl: "",
-  competitorName: "",
-  competitorPrice: "",
   price: "",
   priceUnit: "piece",
+  isSuperPrice: false,
+  isBogo: false,
   isActive: true,
-  promotionMode: "NONE",
-  percentOff: "",
-  promoPrice: "",
-  promoLabel: "",
-  promoStartsAt: "",
-  promoEndsAt: "",
-  promoIsActive: true,
+  competitorName: "",
+  competitorPrice: "",
 };
 
-export function parseOptionalMoney(input: string): number | null {
-  const trimmed = input.trim();
+/** "4,99" or "4.99" → 4.99; "" → null; anything else → NaN. */
+export function parseMoney(input: string): number | null {
+  const trimmed = input.trim().replace(/\s/g, "").replace(",", ".");
   if (!trimmed) return null;
-  const value = Number(trimmed.replace(",", "."));
-  if (!Number.isFinite(value)) return null;
-  return value;
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return Number.NaN;
+  return Number(trimmed);
 }
 
-export function parseOptionalInteger(input: string): number | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  const value = Number(trimmed);
-  if (!Number.isFinite(value)) return null;
-  return Math.trunc(value);
-}
-
-export function parseOptionalDateTimeLocal(input: string): string | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  let normalized = trimmed;
-  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/.test(normalized)) {
-    normalized = normalized.replace(" ", "T");
-  } else if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
-    normalized = `${normalized}T00:00`;
-  }
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString();
-}
-
-export function toDateOnlyValue(value: string | null): string {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+/** 4.99 → "4,99" for the price inputs. */
+export function moneyText(value: number | null | undefined): string {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(2).replace(".", ",") : "";
 }
