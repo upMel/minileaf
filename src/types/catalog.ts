@@ -51,6 +51,8 @@ export type Product = {
   /** Top-level category (resolved from a subcategory when needed). */
   categoryId?: string;
   subcategoryId?: string;
+  /** True when `imageUrl` is the category's picture because the product has none. */
+  usesCategoryImage?: boolean;
 };
 
 export function toProduct(row: CatalogRow): Product {
