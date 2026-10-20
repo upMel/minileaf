@@ -11,20 +11,25 @@ import { cache } from "react";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { escapeLike, foldGreek, searchTerms } from "@/lib/greek";
-import { FALLBACK_CATEGORY_ROWS, FALLBACK_OFFER_GROUP_ROWS, FALLBACK_PRODUCT_ROWS } from "@/lib/data/fallback";
+import { FALLBACK_CATEGORY_ROWS, FALLBACK_FLYER, FALLBACK_OFFER_GROUP_ROWS, FALLBACK_PRODUCT_ROWS } from "@/lib/data/fallback";
+import { LAYOUT_TEMPLATES } from "@/lib/layout-templates";
 import {
   buildCategoryTree,
   CATALOG_FIELDS,
   CATEGORY_FIELDS,
   DEFAULT_STORE_INFO,
+  FLYER_PAGE_FIELDS,
   OFFER_GROUP_FIELDS,
   parseStoreInfo,
   STORE_CONFIG_KEY,
+  toFlyerPage,
   toOfferGroup,
   toProduct,
   type CatalogRow,
   type Category,
   type CategoryRow,
+  type FlyerPage,
+  type FlyerPageRow,
   type OfferGroup,
   type OfferGroupRow,
   type Product,
@@ -308,4 +313,86 @@ export async function searchCatalog(query: string, sort: ProductSort): Promise<{
   // "Suggested" keeps name matches ahead of category matches; price sorts mix them.
   const products = sort === "default" ? merged : sortProducts(merged, sort);
   return { products, categories };
+}
+
+// ── Flyer ───────────────────────────────────────────────────────────────────
+
+export type ResolvedFlyerPage =
+  | { id: string; kind: "image"; imageUrl: string }
+  | {
+      id: string;
+      kind: "template";
+      templateId: string;
+      /** One entry per template slot, in the template's slot order. */
+      cells: (Product | null)[];
+    };
+
+export type ResolvedFlyer = {
+  name: string;
+  orientation: "portrait" | "landscape";
+  pages: ResolvedFlyerPage[];
+};
+
+/**
+ * Turns flyer pages into ready-to-draw pages. Template slots hold the product
+ * the admin picked; empty slots (or a picked product that's since been hidden)
+ * fill automatically — offers first, then everything else — continuing across
+ * pages so no product appears twice.
+ */
+function resolveFlyerPages(pages: FlyerPage[], products: Product[]): ResolvedFlyerPage[] {
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const pinned = new Set<string>();
+  for (const page of pages) {
+    if (page.kind !== "template") continue;
+    for (const id of Object.values(page.slots)) if (id && byId.has(id)) pinned.add(id);
+  }
+  const pool = products.filter((p) => !pinned.has(p.id));
+  let next = 0;
+
+  return pages.map((page): ResolvedFlyerPage => {
+    if (page.kind === "image") return { id: page.id, kind: "image", imageUrl: page.imageUrl };
+    const template = LAYOUT_TEMPLATES.find((t) => t.id === page.templateId) ?? LAYOUT_TEMPLATES[0];
+    const cells = template.slots.map((slot) => {
+      const id = page.slots[slot.id];
+      const picked = id ? byId.get(id) : undefined;
+      return picked ?? pool[next++] ?? null;
+    });
+    return { id: page.id, kind: "template", templateId: template.id, cells };
+  });
+}
+
+/** The active flyer (layouts.is_active), or null when none is switched on. */
+export async function getActiveFlyer(): Promise<ResolvedFlyer | null> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) {
+    const products = await getProducts({ limit: DEFAULT_LIMIT });
+    return { ...FALLBACK_FLYER, pages: resolveFlyerPages(FALLBACK_FLYER.pages, products) };
+  }
+
+  const { data: layout, error } = await supabase
+    .from("layouts")
+    .select("id,name,orientation")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) console.error("[storefront] flyer:", error.message);
+  if (!layout) return null;
+
+  const { data: rows, error: pagesError } = await supabase
+    .from("layout_pages")
+    .select(FLYER_PAGE_FIELDS)
+    .eq("layout_id", layout.id)
+    .order("page_order", { ascending: true });
+  if (pagesError) console.error("[storefront] flyer pages:", pagesError.message);
+
+  const pages = ((rows ?? []) as FlyerPageRow[]).map(toFlyerPage).filter((p): p is FlyerPage => p !== null);
+  if (pages.length === 0) return null;
+
+  const products = pages.some((p) => p.kind === "template") ? await getProducts({ limit: DEFAULT_LIMIT }) : [];
+  return {
+    name: layout.name as string,
+    orientation: layout.orientation === "landscape" ? "landscape" : "portrait",
+    pages: resolveFlyerPages(pages, products),
+  };
 }

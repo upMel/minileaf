@@ -1953,3 +1953,481 @@
     text-align: center;
   }
 }
+
+/* ═══ Το κατάστημα ════════════════════════════════════════════════════════ */
+
+.ks-contact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 20px;
+  padding: clamp(20px, 4vw, 44px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+}
+.ks-contact h1,
+.ks-contact h2 {
+  margin: 0 0 14px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--heading-ink);
+}
+.ks-contact h1 {
+  font-size: 2rem;
+}
+.ks-contact h2 {
+  font-size: 1.65rem;
+  margin-bottom: 12px;
+}
+.ks-contact p {
+  margin: 10px 0;
+}
+.ks-contact-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--wine);
+}
+.ks-contact-phone {
+  font-size: 24px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--green);
+}
+.ks-contact-status {
+  display: flex;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.ks-hours {
+  margin: 0;
+}
+.ks-hours div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--line);
+}
+.ks-hours dt,
+.ks-hours dd {
+  margin: 0;
+}
+.ks-hours dd {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ks-hours .today {
+  border-radius: 6px;
+  background: #f1f6ee;
+}
+
+/* ═══ Flyer reader ════════════════════════════════════════════════════════ */
+
+.ks-reader {
+  padding: 14px 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+.ks-reader-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 12px;
+  font-size: 14px;
+  color: var(--green);
+}
+.ks-btn-ghost {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 700;
+}
+.ks-btn-ghost:hover {
+  border-color: var(--green);
+}
+.ks-stage {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 6px;
+}
+.ks-stage:focus-visible {
+  outline-offset: 6px;
+}
+.ks-arrow {
+  width: 44px;
+  height: 64px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--green);
+  font-size: 40px;
+  line-height: 1;
+}
+.ks-arrow:hover:not(:disabled) {
+  background: var(--green-soft);
+}
+.ks-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.ks-pager {
+  margin: 12px 0 0;
+  text-align: center;
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+.ks-help {
+  margin: 4px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* The book: two pages side by side (or one), turning like paper */
+.ks-book {
+  position: relative;
+  display: flex;
+  width: min(100%, calc(78vh * var(--ar, 1.414)));
+  aspect-ratio: var(--ar, 1.414);
+  min-width: 0;
+  margin: 0 auto;
+  perspective: 2000px;
+  touch-action: pan-y;
+  user-select: none;
+}
+.ks-book-pending {
+  border-radius: 6px;
+  background: #f3f1ea;
+}
+.ks-leaf {
+  position: relative;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 3px 14px #0000001f;
+  container-type: inline-size;
+}
+.ks-book.single .ks-leaf {
+  width: 100%;
+}
+.ks-leaf.blank {
+  background: transparent;
+  box-shadow: none;
+}
+.ks-turning {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  width: 50%;
+  height: 100%;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+.ks-turning.forward {
+  left: 50%;
+}
+.ks-turning.backward {
+  left: 0;
+}
+.ks-book.single .ks-turning {
+  left: 0;
+  width: 100%;
+}
+.ks-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.ks-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #fff;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.ks-face.back {
+  transform: rotateY(180deg);
+}
+.ks-face-in {
+  position: absolute;
+  top: 0;
+  left: calc(var(--slice) * -100%);
+  width: 1200%; /* one strip is 1/12 of the page: show its slice of the full page */
+  height: 100%;
+  container-type: inline-size;
+}
+.ks-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #17241c;
+  opacity: var(--paper-shade, 0);
+  pointer-events: none;
+}
+.ks-preload {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ks-preload .ks-leaf {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Full screen (real API, or a fixed overlay where it's missing) */
+.ks-reader:fullscreen,
+.ks-reader.is-full {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 0;
+  background: var(--card);
+}
+.ks-reader.is-full {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  border: 0;
+}
+.ks-reader:fullscreen .ks-book,
+.ks-reader.is-full .ks-book {
+  width: min(100%, calc(86vh * var(--ar, 1.414)));
+}
+
+/* Phone: a row of pages you swipe */
+.ks-book.slider {
+  display: flex;
+  width: min(100%, calc(74vh * 0.707));
+  aspect-ratio: 0.707;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  perspective: none;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.ks-book.slider::-webkit-scrollbar {
+  display: none;
+}
+.ks-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  overflow: hidden;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  background: #fff;
+  container-type: inline-size;
+}
+
+/* ═══ Flyer pages (sizes in cqw = % of the page width) ════════════════════ */
+
+.fp {
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 1.4cqw;
+  width: 100%;
+  height: 100%;
+  padding: 2cqw;
+  background: #fff;
+}
+.fp-slot {
+  min-width: 0;
+  min-height: 0;
+}
+.fp-blank {
+  display: block;
+  height: 100%;
+  border-radius: 1.2cqw;
+  background: #f6f4ee;
+}
+.fp-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #ece8de;
+  border-radius: 1.2cqw;
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.fp-cell:hover {
+  border-color: var(--green);
+  box-shadow: 0 0.6cqw 1.6cqw #1b2a201f;
+}
+.fp-img {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+}
+.fp-img img {
+  object-fit: contain;
+  padding: 4%;
+}
+.fp-badges {
+  position: absolute;
+  top: 0.8cqw;
+  left: 0.8cqw;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5cqw;
+}
+.fp-badge {
+  padding: 0.35em 0.55em;
+  border-radius: 0.45em;
+  background: var(--badge-bg);
+  color: #fff;
+  font-size: calc(2cqw * var(--fp-scale));
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+}
+.fp-badge-bogo {
+  background: var(--brand-orange);
+}
+.fp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3cqw;
+  padding: 1cqw 1.4cqw 1.2cqw;
+  border-top: 1px solid #f0ede6;
+}
+.fp-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: calc(2.7cqw * var(--fp-scale));
+  font-weight: 700;
+  line-height: 1.2;
+}
+.fp-size {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(2cqw * var(--fp-scale));
+  color: var(--muted);
+}
+.fp-price {
+  font-size: calc(4.6cqw * var(--fp-scale));
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--price);
+  font-variant-numeric: tabular-nums;
+}
+/* Bigger type for bigger slots. Sized for a portrait page shown as half of a
+   two-page spread; landscape pages (shorter rows) scale everything down. */
+.fp {
+  --fp-scale: 1;
+}
+.fp.fp-landscape {
+  --fp-scale: 0.56;
+}
+.fp-featured .fp-name {
+  font-size: calc(2.8cqw * var(--fp-scale));
+}
+.fp-featured .fp-price {
+  font-size: calc(5cqw * var(--fp-scale));
+}
+.fp-hero .fp-name {
+  font-size: calc(4cqw * var(--fp-scale));
+}
+.fp-hero .fp-size {
+  font-size: calc(2.7cqw * var(--fp-scale));
+}
+.fp-hero .fp-price {
+  font-size: calc(9cqw * var(--fp-scale));
+}
+.fp-hero .fp-badge {
+  font-size: calc(2.9cqw * var(--fp-scale));
+}
+/* Phone page: 2 × 2, big and readable */
+.fp-phone {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 3cqw;
+  padding: 3.5cqw;
+}
+.fp-phone .fp-cell {
+  border-radius: 2.5cqw;
+}
+.fp-phone .fp-info {
+  gap: 0.6cqw;
+  padding: 2cqw 2.4cqw 2.4cqw;
+}
+.fp-phone .fp-name {
+  font-size: 4.6cqw;
+}
+.fp-phone .fp-size {
+  font-size: 3.5cqw;
+}
+.fp-phone .fp-price {
+  font-size: 8cqw;
+}
+.fp-phone .fp-badges {
+  top: 2cqw;
+  left: 2cqw;
+}
+.fp-phone .fp-badge {
+  font-size: 3.3cqw;
+}
+.fp-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+}
+.fp-image img {
+  object-fit: contain;
+}
+
+@media (max-width: 760px) {
+  .ks-contact {
+    grid-template-columns: 1fr;
+  }
+  .ks-contact h1 {
+    font-size: 1.5rem;
+  }
+  .ks-contact h2 {
+    font-size: 1.3rem;
+  }
+  .ks-reader {
+    margin-inline: -16px;
+    padding: 10px 0 14px;
+    border-inline: 0;
+    border-radius: 0;
+  }
+  .ks-reader-bar {
+    padding: 0 14px 10px;
+  }
+  .ks-stage {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .ks-stage .ks-arrow {
+    display: none;
+  }
+}

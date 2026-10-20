@@ -2,7 +2,7 @@
 // previews). Same 25 categories and pictures as the live database seed.
 // Generated from the Kaimakidis artifact — do not edit by hand.
 
-import type { CatalogRow, CategoryRow, OfferGroupRow } from "@/types/catalog";
+import type { CatalogRow, CategoryRow, FlyerPage, OfferGroupRow } from "@/types/catalog";
 
 const TREE: [name: string, subcategories: string[]][] = [
   ["Έτοιμα Γεύματα", ["Λαδερά"]],
@@ -150,3 +150,16 @@ export const FALLBACK_OFFER_GROUP_ROWS: OfferGroupRow[] = GROUPS.map(([name, cat
   is_visible: true,
   offer_group_categories: cats.map((c, j) => ({ category_id: `demo-${String(c).padStart(2, "0")}`, sort_order: j })),
 }));
+
+// Demo flyer: three template pages, every slot auto-filled from the products above.
+export const FALLBACK_FLYER: { name: string; orientation: "portrait" | "landscape"; pages: FlyerPage[] } = {
+  name: "Φυλλάδιο εβδομάδας",
+  orientation: "portrait",
+  pages: ["weekly-special", "feature-wall", "magazine", "two-rows"].map((templateId, i) => ({
+    id: `demo-page-${i}`,
+    order: i,
+    kind: "template" as const,
+    templateId,
+    slots: {},
+  })),
+};
