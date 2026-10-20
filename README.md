@@ -27,6 +27,17 @@ MiniLeaf can load real deals from Supabase if you configure:
 
 If env vars are missing, the home page falls back to demo data.
 
+### Migrations
+
+Run these in the Supabase SQL Editor, in this order (each is safe to re-run unless noted):
+
+1. `supabase/schema.sql`
+2. `supabase/add_site_config.sql` (run once — its policies are replaced by step 6)
+3. `supabase/add_layouts.sql` (run once — its policies are replaced by step 6)
+4. `supabase/add_product_description_and_unit.sql`
+5. `supabase/add_product_images_bucket.sql`
+6. `supabase/add_kaimakidis_refactor.sql` — Kaimakidis storefront data model: ΣΟΥΠΕΡ ΤΙΜΗ / 1+1 flags, offer groups, banner, flyer image pages, store info, admin-only writes. Ends with a short checklist table.
+
 ### Admin login
 
 The public site has no user accounts. Only the owner uses Supabase Auth to access `/admin`.
