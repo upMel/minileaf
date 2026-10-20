@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import Button from "@/components/ui/Button";
 import { AdminAuthProvider, useAdminAuthContext } from "@/context/AdminAuthContext";
@@ -70,7 +69,6 @@ function AdminShell({ children }: { children: ReactNode }) {
             </div>
             <div className="flex items-center gap-2">
               <LanguageToggle />
-              <ThemeToggle />
               <Link href="/" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-black/[.04] dark:border-white/15 dark:bg-black dark:text-zinc-50 dark:hover:bg-white/10">
                 {t.nav.back}
               </Link>
@@ -123,7 +121,6 @@ function AdminShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle />
-            <ThemeToggle />
             <Link href="/" className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-black/[.04] dark:border-white/15 dark:bg-black dark:text-zinc-50 dark:hover:bg-white/10">
               <span className="hidden sm:inline">{t.nav.backToStore}</span>
               <span className="sm:hidden">{t.nav.back}</span>
