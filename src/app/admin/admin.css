@@ -1,0 +1,1465 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Kaimakidis admin — same look as the artifact's admin: brand header, tab
+   bar, then editor card (left) + list card (right). Scoped under `.ka`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root:has(.ka) {
+  background: #f8f5eb;
+}
+
+.ka {
+  --green: #2f6e50;
+  --green-soft: #e6efe6;
+  --green-line: #cfe0d2;
+  --wine: #8b2638;
+  --ink: #19261e;
+  --muted: #69736b;
+  --line: #e4e0d7;
+  --cream: #f8f5eb;
+  --danger: #b42318;
+  --focus: #d58831;
+
+  flex: 1;
+  min-height: 100dvh;
+  padding: 0 16px 60px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  border-top: 5px solid transparent;
+  border-image: linear-gradient(90deg, #2f6e50 0 33.34%, #b4474f 0 66.67%, #ec7a22 0) 1 0 0 0;
+}
+.ka *,
+.ka *::before,
+.ka *::after {
+  box-sizing: border-box;
+}
+:where(.ka) button,
+:where(.ka) input,
+:where(.ka) select,
+:where(.ka) textarea {
+  font: inherit;
+  color: inherit;
+}
+:where(.ka) button {
+  cursor: pointer;
+}
+.ka :focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.ka [hidden] {
+  display: none !important;
+}
+.ka-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header */
+.ka-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ka-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-decoration: none;
+}
+.ka-brand span {
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.ka-brand strong {
+  color: var(--wine);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+.ka-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.ka-outline {
+  padding: 10px 14px;
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ka-outline:hover {
+  background: var(--green-soft);
+}
+.ka-user {
+  font-size: 13px;
+  color: var(--muted);
+}
+.ka-lang {
+  display: inline-flex;
+  border: 1px solid var(--green-line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+.ka-lang button {
+  border: 0;
+  background: none;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--green);
+}
+.ka-lang button[aria-pressed="true"] {
+  background: var(--green);
+  color: #fff;
+}
+
+/* Tabs */
+.ka-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0 0;
+  padding: 18px;
+  border-radius: 12px;
+  background: #f3efe5;
+}
+.ka-tabs a {
+  padding: 12px 24px;
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--green);
+  font-weight: 700;
+  text-decoration: none;
+}
+.ka-tabs a[aria-current="page"] {
+  background: var(--green);
+  color: #fff;
+}
+
+/* Page intro */
+.ka-intro {
+  padding: 30px 0;
+}
+.ka-intro p {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #806f57;
+}
+.ka-intro h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.ka-intro > span {
+  color: var(--muted);
+}
+
+/* Two cards side by side */
+.ka-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+.ka-layout.single {
+  grid-template-columns: minmax(0, 760px);
+}
+.ka-card {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+.ka-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.ka-card-title h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 750;
+}
+.ka-card > p {
+  margin: 0 0 20px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.ka-count {
+  flex: none;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #edf1e9;
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Form controls */
+.ka-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ka-field > small,
+.ka-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #707a6b;
+}
+.ka-input,
+.ka-field input:not([type="file"]):not([type="checkbox"]),
+.ka-field textarea,
+.ka-field select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d9ddd5;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.ka-field input:focus,
+.ka-field textarea:focus,
+.ka-field select:focus,
+.ka-input:focus {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.ka-field textarea {
+  resize: vertical;
+}
+.ka-field input:disabled {
+  opacity: 0.45;
+}
+.ka-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.ka-inline {
+  display: flex;
+  gap: 8px;
+}
+.ka-inline > input {
+  flex: 1;
+  min-width: 0;
+}
+.ka-seg {
+  display: flex;
+  border: 1px solid #d9ddd5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ka-seg button {
+  flex: 1;
+  padding: 10px 8px;
+  border: 0;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ka-seg button + button {
+  border-left: 1px solid #d9ddd5;
+}
+.ka-seg button[aria-pressed="true"] {
+  background: var(--green);
+  color: #fff;
+}
+
+/* Photo upload box */
+.ka-upload {
+  padding: 15px;
+  border: 1px dashed #aabaaa;
+  border-radius: 12px;
+  background: #f8faf6;
+}
+.ka-upload-preview {
+  position: relative;
+  height: 180px;
+  border-radius: 6px;
+  background: #fff;
+}
+.ka-upload-preview img {
+  object-fit: contain;
+}
+.ka-upload-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 130px;
+  color: #65775f;
+  text-align: center;
+}
+.ka-upload-placeholder b {
+  font-size: 30px;
+}
+.ka-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ka-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Buttons */
+.ka-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--green);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+.ka-btn:hover:not(:disabled) {
+  background: #275d44;
+}
+.ka-btn-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #d6dfd2;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ka-btn-small:hover:not(:disabled) {
+  border-color: var(--green);
+}
+.ka-text-btn {
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ka-danger {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 12px 18px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  background: #fff5f4;
+  color: var(--danger);
+  font-weight: 700;
+}
+.ka button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.ka-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.ka-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  font-weight: 600;
+  color: var(--danger);
+}
+.ka-confirm .ka-danger {
+  margin-top: 0;
+}
+
+/* Checkbox rows */
+.ka-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0;
+  cursor: pointer;
+}
+.ka-check input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--green);
+}
+.ka-check strong {
+  display: block;
+  font-size: 15px;
+}
+.ka-check small {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ka-check-super strong {
+  color: #b42318;
+}
+.ka-check-bogo strong {
+  color: #c25e12;
+}
+
+/* Collapsible block */
+.ka-details {
+  margin: 8px 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.ka-details summary {
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ka-details[open] summary {
+  border-bottom: 1px solid var(--line);
+}
+.ka-details > div {
+  padding: 14px 14px 0;
+}
+
+/* Messages */
+.ka-error,
+.ka-success {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ka-error {
+  background: #fff1ed;
+  color: #9b252c;
+}
+.ka-success {
+  background: #e8f2e5;
+  color: var(--green);
+}
+
+/* Barcode lookup result */
+.ka-lookup {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin: -6px 0 18px;
+  padding: 12px;
+  border: 1px solid var(--green-line);
+  border-radius: 10px;
+  background: #f6faf4;
+  font-size: 14px;
+}
+.ka-lookup-pic {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  background: #fff;
+}
+.ka-lookup-pic img {
+  object-fit: contain;
+}
+.ka-lookup p {
+  margin: 0 0 4px;
+}
+.ka-lookup .ka-hint {
+  display: block;
+}
+.ka-lookup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Inventory list */
+.ka-search {
+  margin-bottom: 12px;
+}
+.ka-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ka-filters button {
+  padding: 6px 11px;
+  border: 1px solid #d9e0d5;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ka-filters button[aria-pressed="true"] {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.ka-list article {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #eceee7;
+}
+.ka-list article.editing {
+  margin: 0 -10px;
+  padding-inline: 10px;
+  border-radius: 10px;
+  background: #f1f6ee;
+}
+.ka-list-pic {
+  position: relative;
+  width: 60px;
+  height: 64px;
+}
+.ka-list-pic img {
+  object-fit: contain;
+}
+.ka-list h3 {
+  margin: 0 0 3px;
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.ka-list p {
+  margin: 0 0 3px;
+  font-size: 13px;
+  color: #777;
+}
+.ka-list strong {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.ka-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 12px;
+}
+.ka-tags span {
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: #f0eeeb;
+}
+.ka-tags .super {
+  background: #ffe0ad;
+  color: #a33810;
+}
+.ka-tags .bogo {
+  background: #fde3cd;
+  color: #b4581a;
+}
+.ka-empty {
+  padding: 25px 4px;
+  color: #687264;
+  line-height: 1.5;
+}
+.ka-empty h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--green);
+}
+
+/* Opening-hours editor */
+.ka-hours {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ka-hours-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ka-hours-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.ka-hours-row input[type="time"] {
+  padding: 9px 10px;
+  border: 1px solid #d9ddd5;
+  border-radius: 8px;
+  background: #fff;
+}
+.ka-hours-row input:disabled {
+  opacity: 0.4;
+}
+.ka-closed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.ka-closed input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--green);
+}
+
+/* Sign-in */
+.ka-signin {
+  max-width: 420px;
+  margin: 48px auto 0;
+}
+.ka-signin h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+.ka-signin p {
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+
+@media (max-width: 800px) {
+  .ka {
+    padding-inline: 12px;
+  }
+  .ka-header {
+    flex-wrap: wrap;
+    padding: 14px 0;
+    row-gap: 10px;
+  }
+  .ka-brand strong {
+    font-size: 21px;
+  }
+  .ka-header-actions {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .ka-outline {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  /* Tabs: one row you swipe sideways */
+  .ka-tabs {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-inline: -12px;
+    padding: 10px 12px;
+    border-radius: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ka-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .ka-tabs a {
+    flex: none;
+    padding: 9px 14px;
+    white-space: nowrap;
+  }
+  .ka-intro {
+    padding: 22px 0;
+  }
+  .ka-intro h1 {
+    font-size: 27px;
+  }
+  .ka-layout {
+    grid-template-columns: 1fr;
+  }
+  .ka-card {
+    padding: 18px;
+  }
+  .ka-list article {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 9px;
+  }
+  .ka-list-pic {
+    width: 48px;
+  }
+  .ka-hours-row {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 4px;
+  }
+  .ka-hours-row > span:first-child {
+    grid-column: 1 / -1;
+    font-weight: 700;
+  }
+}
+
+/* Plain <img> previews (fill their box, keep proportions) */
+.ka-upload-preview img,
+.ka-lookup-pic img,
+.ka-list-pic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ── Shared bits for the builders (flyers, banner, categories) ─────────────── */
+.ka-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ka-back {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.ka-back:hover {
+  text-decoration: underline;
+}
+.ka-status {
+  min-height: 20px;
+  margin: -18px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ka-card-title h2 small {
+  margin-left: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f0eeeb;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  vertical-align: middle;
+}
+.ka-thumb {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #f3f1ec;
+}
+.ka-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+.ka-upload-button {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+.ka-upload-button:hover:not(:disabled) {
+  background: #eef4ea;
+}
+.ka-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px 10px;
+}
+.ka-confirm-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ka-danger-small {
+  padding: 8px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  background: #fff5f4;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ka-text-danger {
+  color: var(--danger);
+}
+.ka-tags .live {
+  background: var(--green-soft);
+  color: var(--green);
+  font-weight: 700;
+}
+.ka-note {
+  display: block;
+  margin: 12px 0 0;
+}
+
+/* Product picker (flyer slots, banner slots) */
+.ka-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.ka-picker-list {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  overscroll-behavior: contain;
+}
+.ka-picker-list > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid #f0eee9;
+  background: #fff;
+  text-align: left;
+}
+.ka-picker-list > button:hover {
+  background: #f7faf5;
+}
+.ka-picker-list > button[aria-selected="true"] {
+  background: var(--green-soft);
+  box-shadow: inset 4px 0 0 var(--green);
+}
+.ka-picker-list b {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.ka-picker-list small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ka-picker-list em {
+  font-style: normal;
+  font-weight: 700;
+}
+.ka-picker-list em.super {
+  color: #b42318;
+}
+.ka-picker-list em.bogo {
+  color: #c25e12;
+}
+.ka-picker-list > .ka-hint {
+  margin: 0;
+  padding: 12px;
+}
+.ka-picker-auto-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: #fff4e6;
+  color: #c25e12;
+  font-size: 18px;
+}
+
+/* ── Flyer builder ────────────────────────────────────────────────────────── */
+.ka-orient {
+  justify-self: center;
+  width: 34px;
+  height: 46px;
+  border: 2px solid var(--green);
+  border-radius: 4px;
+  background: repeating-linear-gradient(180deg, #e6efe6 0 6px, #fff 6px 10px);
+}
+.ka-orient.landscape {
+  width: 50px;
+  height: 36px;
+}
+.ka-builder {
+  display: grid;
+  grid-template-columns: minmax(0, 330px) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+.ka-builder-side {
+  display: grid;
+  gap: 26px;
+  min-width: 0;
+}
+.ka-flyer-danger {
+  margin-top: 26px;
+  padding-block: 14px;
+}
+
+/* Page list */
+.ka-rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.ka-rows li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+.ka-rows li.current {
+  border-color: var(--green-line);
+  background: #f1f6ee;
+}
+.ka-row {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.ka-row-pic {
+  display: block;
+  flex: none;
+  width: 46px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+.ka-row-pic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ka-row-pic .ka-tpl-mini {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.ka-row-text {
+  min-width: 0;
+}
+.ka-row-text b {
+  display: block;
+  font-size: 14px;
+}
+.ka-row-text small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ka-row-tools {
+  display: flex;
+  gap: 4px;
+}
+.ka-row-tools button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d6dfd2;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--green);
+  font-weight: 800;
+}
+.ka .ka-row-tools button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.ka-rows-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Template pictures */
+.ka-tpl-mini {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 2px;
+  width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+.ka-tpl-mini i {
+  border-radius: 2px;
+  background: #dfe8dc;
+}
+.ka-tpl-mini i.r-hero {
+  background: #f2b9a2;
+}
+.ka-tpl-mini i.r-featured {
+  background: #f6d9a8;
+}
+.ka-tpl-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 10px;
+}
+.ka-tpl-choices button {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #e0e3dc;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--muted);
+}
+.ka-tpl-choices button:hover {
+  border-color: var(--green);
+}
+.ka-tpl-choices button[aria-pressed="true"] {
+  border-color: var(--green);
+  background: var(--green-soft);
+  box-shadow: 0 0 0 1px var(--green);
+  color: var(--green);
+}
+
+/* Page preview with clickable boxes + picker beside it */
+.ka-fedit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.ka-fedit.wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ka-tpl {
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  box-shadow: 0 6px 20px rgba(25, 38, 30, 0.08);
+}
+.ka-tpl-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 0;
+  padding: 18px 4px 6px;
+  overflow: hidden;
+  border: 1px dashed #c9d3c4;
+  border-radius: 6px;
+  background: #fff;
+  text-align: center;
+}
+.ka-tpl-slot.r-hero {
+  background: #fff7f2;
+}
+.ka-tpl-slot.r-featured {
+  background: #fffaf0;
+}
+.ka-tpl-slot:hover {
+  border-color: var(--green);
+}
+.ka-tpl-slot[aria-pressed="true"] {
+  border: 2px solid var(--focus);
+  box-shadow: 0 0 0 3px rgba(213, 136, 49, 0.25);
+}
+.ka-tpl-num {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--green);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+}
+.ka-tpl-pic {
+  display: block;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  max-height: 70%;
+}
+.ka-tpl-pic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.ka-tpl-name {
+  flex: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.ka-tpl-auto {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9a8f7c;
+}
+.ka-tpl-warn {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #fff1ed;
+  color: #9b252c;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+.ka-fslot {
+  min-width: 0;
+  scroll-margin: 16px;
+}
+.ka-fslot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.ka-fslot-head h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.ka-fslot-empty {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  min-height: 180px;
+  padding: 20px;
+  border: 1px dashed #d6dccf;
+  border-radius: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+.ka-fslot-empty b {
+  font-size: 26px;
+}
+.ka-fslot-empty p {
+  margin: 0;
+  max-width: 26ch;
+}
+
+/* ── Banner builder (reuses the flyer builder's layout and page list) ──────── */
+.ka-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 22px;
+  padding: 14px 16px;
+  border: 1px solid #f1d9a9;
+  border-radius: 12px;
+  background: #fff8e8;
+  font-size: 14px;
+  color: #5f4a1f;
+}
+.ka-notice b {
+  font-size: 15px;
+  color: #8a5a00;
+}
+.ka-off {
+  font-style: normal;
+  font-weight: 700;
+  color: #9b252c;
+}
+.ka-row-pic.wide {
+  width: 64px;
+  border: 0;
+  background: none;
+}
+.ka-bmini {
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 2px;
+  width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+.ka-bmini i {
+  border-radius: 2px;
+  background: #f2b9a2;
+}
+.ka-bmini i + i {
+  background: #f6d9a8;
+}
+.ka-btpl-choices {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+}
+.ka-bprev {
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(100deg, #fdf3dc 0%, #fbe3c0 100%);
+  box-shadow: 0 6px 20px rgba(25, 38, 30, 0.08);
+}
+.ka-bprev-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #ecdcbc;
+  border-radius: 8px;
+  background: #fff;
+}
+.ka-bprev-slot.empty {
+  border-style: dashed;
+  background: #fffaf0;
+}
+.ka-bprev-slot:hover {
+  border-color: var(--green);
+}
+.ka-bprev-slot[aria-pressed="true"] {
+  border: 2px solid var(--focus);
+  box-shadow: 0 0 0 3px rgba(213, 136, 49, 0.25);
+}
+.ka-bprev-slot .ka-tpl-num {
+  z-index: 1;
+}
+.ka-bprev-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.ka-bprev-product {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 22px 8px 8px;
+  text-align: center;
+}
+.ka-bslot-wrap {
+  margin-bottom: 8px;
+}
+.ka-bslot-editor {
+  padding: 16px;
+  border: 1px solid var(--green-line);
+  border-radius: 12px;
+  background: #fbfdf9;
+}
+@media (max-width: 1000px) {
+  .ka-builder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .ka-fedit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ka-tpl {
+    gap: 4px;
+    padding: 6px;
+  }
+  .ka-tpl-name {
+    font-size: 10px;
+  }
+  .ka-tpl-choices {
+    display: flex;
+    margin-inline: -18px;
+    padding: 2px 18px 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ka-tpl-choices button {
+    flex: 0 0 92px;
+  }
+  .ka-picker-list {
+    max-height: 360px;
+  }
+  .ka-list .ka-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* ── Categories & offer groups ────────────────────────────────────────────── */
+.ka-subtabs {
+  max-width: 420px;
+  margin: -8px 0 26px;
+  background: #fff;
+}
+.ka-add-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ka-add-row .ka-input {
+  flex: 1;
+  min-width: 0;
+}
+.ka-rows .ka-thumb {
+  border: 1px solid var(--line);
+}
+.ka-sync {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.ka-sync .ka-success {
+  margin: 4px 0 0;
+}
+.ka-subs {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.ka-subs li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+}
+.ka-subs li > small {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ka-subs .ka-input {
+  padding: 9px 10px;
+  font-size: 15px;
+}
+.ka-fieldset legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ka-checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 14px;
+  margin-top: 6px;
+}
+.ka-checklist label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.ka-checklist label:hover {
+  background: #f4f7f1;
+}
+.ka-checklist input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--green);
+}
+@media (max-width: 640px) {
+  .ka-subs li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name tools"
+      "count del";
+    row-gap: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eceee7;
+  }
+  .ka-subs li > .ka-input {
+    grid-area: name;
+  }
+  .ka-subs li > small {
+    grid-area: count;
+  }
+  .ka-subs li > .ka-row-tools {
+    grid-area: tools;
+  }
+  .ka-subs li > :last-child {
+    grid-area: del;
+    justify-self: end;
+  }
+}

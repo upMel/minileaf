@@ -1,6 +1,10 @@
-// ── Layout template definitions for the home page flyer view ──
-// Each template uses a 4-column CSS grid base.
-// col/row spans are expressed as CSS grid values.
+// ── Flyer page templates ──
+// A flyer page built from products (table `layout_pages`, kind 'template')
+// picks one of these by id and fills its slots. Each template is a 4-column
+// grid; a slot's size is its column × row span. On phones the reader splits
+// a page into pages of up to 4 products, by `priority`.
+//
+// Ids are stored in the database — never rename one; add a new template instead.
 
 export type SlotSize =
   | "1x1"  // col-span-1 row-span-1
@@ -27,20 +31,6 @@ export type LayoutTemplate = {
   cols: number;         // base grid column count (always 4 for now)
   slots: TemplateSlot[];
 };
-
-// Helper to derive Tailwind col-span / row-span classes from SlotSize
-export function slotSpanClasses(size: SlotSize): string {
-  const map: Record<SlotSize, string> = {
-    "1x1": "col-span-1 row-span-1",
-    "2x1": "col-span-2 row-span-1",
-    "1x2": "col-span-1 row-span-2",
-    "2x2": "col-span-2 row-span-2",
-    "3x2": "col-span-3 row-span-2",
-    "4x1": "col-span-4 row-span-1",
-    "4x2": "col-span-4 row-span-2",
-  };
-  return map[size];
-}
 
 // ── Template 1 — "Weekly Special" ───────────────────────────
 // [hero 2×2][f1  ][f2  ]
@@ -264,17 +254,3 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
 ];
 
 export const DEFAULT_TEMPLATE_ID = "weekly-special";
-
-// The saved config shape (stored as JSON in site_config)
-export type ActiveLayoutConfig = {
-  templateId: string;
-  // slot id → product id (null = auto-fill from product list)
-  slots: Record<string, string | null>;
-};
-
-export function emptyConfig(template: LayoutTemplate): ActiveLayoutConfig {
-  return {
-    templateId: template.id,
-    slots: Object.fromEntries(template.slots.map((s) => [s.id, null])),
-  };
-}
