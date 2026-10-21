@@ -1,20 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 
 import { LanguageProvider, DEFAULT_LOCALE } from "@/context/LanguageContext";
 import "./globals.css";
-
-// Admin UI fonts. Geist has no Greek glyphs, so Inter / JetBrains Mono, which do.
-const appSans = Inter({
-  variable: "--font-app-sans",
-  subsets: ["latin", "greek"],
-});
-
-const appMono = JetBrains_Mono({
-  variable: "--font-app-mono",
-  subsets: ["latin", "greek"],
-});
 
 // Kaimakidis brand display face (storefront headings).
 const brand = localFont({
@@ -53,9 +41,9 @@ export default function RootLayout({
     <html
       lang={DEFAULT_LOCALE}
       suppressHydrationWarning
-      className={`${appSans.variable} ${appMono.variable} ${brand.variable} h-full antialiased`}
+      className={brand.variable}
     >
-      <body className="min-h-full flex flex-col">
+      <body>
         {/* Restore the language before first paint to avoid a flash of the wrong <html lang> */}
         <script
           dangerouslySetInnerHTML={{

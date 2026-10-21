@@ -50,7 +50,7 @@ export function useAdminAuth(supabase: Client) {
   }, [supabase, refresh]);
 
   async function signIn(email: string, password: string): Promise<string | null> {
-    if (!supabase) return dict.auth.supabaseNotConfigured;
+    if (!supabase) return dict.admin.signIn.noEnv;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return error.message;
     await refresh();

@@ -1,6 +1,26 @@
-# MiniLeaf
+# Mini Market Καιμακίδης
 
-MiniLeaf is a lightweight deals “leaflet” (PWA) for a single mini market.
+Website of Mini Market Καιμακίδης (since 1965): the shop's catalogue with
+ΣΟΥΠΕΡ ΤΙΜΗ and 1+1 offers, the weekly flyer, store details and opening
+hours, plus an admin for the owner. Next.js (App Router) + Supabase, installable
+as a PWA. Greek first, English available.
+
+**Shop** (`src/app/(store)`, styles in `store.css`, scoped under `.ks`)
+- Home: offers banner (set up in the admin) and the product categories
+- Category / product / search pages, Προσφορές (Super price + 1+1, by offer group)
+- Φυλλάδιο: the active flyer, pages turn like paper (phones: swipe, ≤ 4 products a page)
+- Το κατάστημα: phone, address, map, opening hours (open/closed now)
+
+**Admin** (`/admin`, styles in `admin.css`, scoped under `.ka`)
+- Products (barcode look-up on e-katanalotis, photo upload, per piece / per kg,
+  ΣΟΥΠΕΡ ΤΙΜΗ, 1+1, admin-only competitor price)
+- Banner: rotating pages, each a layout of boxes holding a product or a picture
+- Flyers: pages built from products, or pictures exported from Canva, mixed
+- Categories (pictures, subcategories) and the offer groups of the Προσφορές page
+- Store details and opening hours
+
+Every admin write goes straight to Supabase with the admin's session; row-level
+security allows writes only for users listed in `admin_users`.
 
 ## Local dev
 
@@ -17,7 +37,7 @@ Open http://localhost:3000
 
 ## Supabase
 
-MiniLeaf can load real deals from Supabase if you configure:
+The site reads everything from Supabase. Configure it like this:
 
 1) Create a Supabase project
 2) Run the SQL in `supabase/schema.sql` in the Supabase SQL Editor
@@ -25,7 +45,7 @@ MiniLeaf can load real deals from Supabase if you configure:
 	- `NEXT_PUBLIC_SUPABASE_URL`
 	- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
 
-If env vars are missing, the home page falls back to demo data.
+If the env vars are missing, the shop runs on built-in demo data (and the admin is unavailable).
 
 ### Migrations
 
@@ -37,6 +57,7 @@ Run these in the Supabase SQL Editor, in this order (each is safe to re-run unle
 4. `supabase/add_product_description_and_unit.sql`
 5. `supabase/add_product_images_bucket.sql`
 6. `supabase/add_kaimakidis_refactor.sql` — Kaimakidis storefront data model: ΣΟΥΠΕΡ ΤΙΜΗ / 1+1 flags, offer groups, banner, flyer image pages, store info, admin-only writes. Ends with a short checklist table.
+7. `supabase/cleanup_after_kaimakidis.sql` — **only after the new site is live**: drops the old `promotions` table and `deals` view, which the new site no longer reads.
 
 ### Admin login
 

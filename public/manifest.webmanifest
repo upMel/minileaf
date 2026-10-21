@@ -1,11 +1,12 @@
 {
-  "name": "MiniLeaf",
-  "short_name": "MiniLeaf",
-  "description": "Deals leaflet for your minimarket",
+  "name": "Mini Market Καιμακίδης",
+  "short_name": "Καιμακίδης",
+  "description": "Mini Market Καιμακίδης, από το 1965: προσφορές της εβδομάδας, φυλλάδιο και όλα τα προϊόντα.",
+  "lang": "el",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#f8f5eb",
+  "theme_color": "#f8f5eb",
   "icons": [
     {
       "src": "/icon-192.png",

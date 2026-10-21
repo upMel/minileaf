@@ -112,12 +112,11 @@ export function bannerGridAreas(template: BannerTemplate): string {
 }
 
 /**
- * Shape of the whole banner on a computer (width / height). Every page uses
- * it, so a template's boxes always fit the same frame.
+ * Shape of the whole banner on a computer (width / height); every page uses
+ * it, so a template's boxes always fit the same frame. Keep it in step with
+ * `.ks-show-pages` in store.css (on phones each box is a 16:9 slide).
  */
 export const BANNER_ASPECT = { width: 16, height: 7 } as const;
-/** Each box is shown alone on a phone, in this shape. */
-export const BANNER_PHONE_ASPECT = { width: 16, height: 9 } as const;
 
 /**
  * Picture size (px) that fills one box exactly on a computer, for the admin's

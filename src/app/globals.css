@@ -1,172 +1,79 @@
+/* Tailwind is kept only for its preflight (the CSS reset both the storefront
+   and the admin are built on). Everything else is plain CSS, scoped:
+   storefront → .ks in (store)/store.css, admin → .ka in admin/admin.css. */
 @import "tailwindcss";
 
-/* Switch Tailwind's dark: variant to class-based so next-themes controls it */
-@variant dark (&:where(.dark, .dark *));
-
-@layer utilities {
-  .rounded-base {
-    @apply rounded-xl;
-  }
-
-  .bg-neutral-primary-medium {
-    @apply bg-white dark:bg-black;
-  }
-
-  .bg-neutral-secondary-medium {
-    @apply bg-zinc-50 dark:bg-white/10;
-  }
-
-  .bg-neutral-tertiary-medium {
-    @apply bg-zinc-100 dark:bg-white/10;
-  }
-
-  .border-default-medium {
-    @apply border-black/10 dark:border-white/15;
-  }
-
-  .text-heading {
-    @apply text-black dark:text-zinc-50;
-  }
-
-  .text-body {
-    @apply text-zinc-600 dark:text-zinc-300;
-  }
-
-  .text-fg-disabled {
-    @apply text-zinc-400 dark:text-zinc-600;
-  }
-
-  .bg-brand {
-    @apply bg-black dark:bg-zinc-50;
-  }
-
-  .bg-brand-strong {
-    @apply bg-black dark:bg-zinc-50;
-  }
-
-  .focus\:ring-brand-medium:focus {
-    @apply ring-2 ring-black/20 dark:ring-white/20;
-  }
-
-  .focus\:ring-neutral-tertiary:focus {
-    @apply ring-2 ring-black/20 dark:ring-white/20;
-  }
-
-  /* Palette-aware utilities */
-  .bg-page {
-    background-color: var(--page-bg);
-  }
-  .text-accent {
-    color: var(--accent);
-  }
-  .bg-badge {
-    background-color: var(--badge-bg);
-    color: var(--badge-fg);
-  }
-}
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-
-  /* ── Palette tokens (default: Market Red) ── */
-  --accent:     #d62828;
-  --accent-fg:  #ffffff;
-  --badge-bg:   #a41f18;
-  --badge-fg:   #ffffff;
-  /* Neutral, not tinted — the products supply the colour, not the page. */
-  --page-bg:    #fafafa;
-  --danger:     #b91c1c;
-  --danger-fg:  #ffffff;
+  color-scheme: light;
 }
 
-/* Fresh Green */
-[data-palette="green"] {
-  --accent:     #2d6a4f;
-  --accent-fg:  #ffffff;
-  --badge-bg:   #1b4332;
-  --badge-fg:   #ffffff;
-  --page-bg:    #fafafa;
-  --danger:     #dc2626;
-  --danger-fg:  #ffffff;
-}
-
-/* Warm Amber */
-[data-palette="amber"] {
-  --accent:     #e07b00;
-  --accent-fg:  #ffffff;
-  --badge-bg:   #8a4b00;
-  --badge-fg:   #ffffff;
-  --page-bg:    #fafafa;
-  --danger:     #c1121f;
-  --danger-fg:  #ffffff;
-}
-
-/* Dark mode overrides */
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --accent:     #e84040;
-  --page-bg:    #0f0f10;
-  --danger:     #ef4444;
-}
-
-.dark[data-palette="green"] {
-  --accent:   #52b788;
-  --page-bg:  #0f0f10;
-  --danger:   #f87171;
-}
-
-.dark[data-palette="amber"] {
-  --accent:   #f59e0b;
-  --page-bg:  #0f0f10;
-  --danger:   #f87171;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-app-sans);
-  --font-mono: var(--font-app-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  /* Handled by .dark class via next-themes; kept for bare body background only */
+html {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-app-sans), system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: #f8f5eb;
+  color: #17241c;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ── Datepicker (react-day-picker v10) ── */
-.rdp-v2 .rdp-range-start .rdp-day-btn,
-.rdp-v2 .rdp-range-end .rdp-day-btn,
-.rdp-v2 .rdp-selected:not(.rdp-range-middle) .rdp-day-btn {
-  background-color: var(--accent) !important;
-  color: #fff !important;
-  font-weight: 700 !important;
+/* ── Root loading and error screens (outside the shop and admin layouts) ── */
+.app-state {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 60dvh;
+  padding: 32px 16px;
 }
-.rdp-v2 .rdp-range-start:not(.rdp-range-end) .rdp-day-btn {
-  border-radius: 0.5rem 0 0 0.5rem !important;
+.app-spinner {
+  width: 32px;
+  height: 32px;
+  border: 4px solid #2f6e5026;
+  border-top-color: #2f6e50;
+  border-radius: 50%;
+  animation: app-spin 0.8s linear infinite;
 }
-.rdp-v2 .rdp-range-end:not(.rdp-range-start) .rdp-day-btn {
-  border-radius: 0 0.5rem 0.5rem 0 !important;
+@keyframes app-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
-.rdp-v2 .rdp-range-start.rdp-range-end .rdp-day-btn {
-  border-radius: 0.5rem !important;
+@media (prefers-reduced-motion: reduce) {
+  .app-spinner {
+    animation-duration: 2.4s;
+  }
 }
-.rdp-v2 .rdp-range-middle {
-  background-color: color-mix(in srgb, var(--accent) 12%, transparent) !important;
-  border-radius: 0 !important;
+.app-error {
+  max-width: 420px;
+  padding: 28px 24px;
+  border: 1px solid #e6e3dc;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
 }
-.rdp-v2 .rdp-range-middle .rdp-day-btn {
-  background-color: transparent !important;
-  color: var(--accent) !important;
-  border-radius: 0 !important;
+.app-error h1 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
 }
-.rdp-v2 .rdp-today:not(.rdp-range-start):not(.rdp-range-end):not(.rdp-selected) .rdp-day-btn {
-  font-weight: 700 !important;
-  color: var(--accent) !important;
+.app-error p {
+  margin: 0 0 20px;
+  color: #667068;
+}
+.app-error button {
+  padding: 12px 20px;
+  border-radius: 9px;
+  background: #2f6e50;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.app-error button:hover {
+  background: #275d44;
 }
