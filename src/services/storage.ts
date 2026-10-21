@@ -2,44 +2,83 @@ import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Client = NonNullable<ReturnType<typeof createSupabaseBrowserClient>>;
 
+/** Product photos. */
 export const PRODUCT_IMAGES_BUCKET = "product-images";
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024; // 8MB
+/** Banners, Canva flyer pages, category and offer-group pictures. */
+export const SITE_IMAGES_BUCKET = "site-images";
+
+const MAX_INPUT_BYTES = 8 * 1024 * 1024; // what we accept from the device
+
+export type UploadErrorKind = "not-image" | "too-large" | "failed";
+export class UploadError extends Error {
+  constructor(public kind: UploadErrorKind, message: string = kind) {
+    super(message);
+  }
+}
 
 function randomId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-/** Validation messages, passed in localized by the caller. */
-export type UploadMessages = {
-  notAnImage: string;
-  tooLarge: string;
-};
+/**
+ * Shrinks a photo in the browser before upload: longest side ≤ `maxSide`,
+ * re-encoded as WebP (JPEG where WebP encoding isn't supported). A 6 MB phone
+ * photo becomes a few hundred KB. Small images and GIFs are left as they are.
+ */
+export async function resizeImage(file: File, maxSide: number, quality = 0.86): Promise<Blob> {
+  if (file.type === "image/gif" || typeof createImageBitmap !== "function") return file;
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new UploadError("not-image");
+  }
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  if (scale === 1 && file.size < 500 * 1024) {
+    bitmap.close();
+    return file;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const encode = (type: string) => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+  const blob = (await encode("image/webp")) ?? (await encode("image/jpeg"));
+  return blob && blob.size < file.size ? blob : file;
+}
 
-export async function uploadProductImage(
+/**
+ * Validates, shrinks and uploads an image; returns its public URL.
+ * Throws `UploadError` with a kind the caller turns into a message.
+ */
+export async function uploadImage(
   supabase: Client,
   file: File,
-  messages: UploadMessages
-): Promise<{ url: string | null; error: string | null }> {
-  if (!file.type.startsWith("image/")) {
-    return { url: null, error: messages.notAnImage };
-  }
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    return { url: null, error: messages.tooLarge };
-  }
+  {
+    bucket,
+    folder,
+    maxSide = 1600,
+    maxInputBytes = MAX_INPUT_BYTES,
+  }: { bucket: string; folder: string; maxSide?: number; maxInputBytes?: number },
+): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new UploadError("not-image");
+  if (file.size > maxInputBytes) throw new UploadError("too-large");
 
-  const extFromName = file.name.includes(".") ? file.name.split(".").pop() : undefined;
-  const ext = (extFromName || file.type.split("/")[1] || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const path = `products/${randomId()}.${ext || "jpg"}`;
+  const body = await resizeImage(file, maxSide);
+  const type = body.type || file.type;
+  const ext = type === "image/webp" ? "webp" : type === "image/png" ? "png" : type === "image/gif" ? "gif" : "jpg";
+  const path = `${folder}/${randomId()}.${ext}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from(PRODUCT_IMAGES_BUCKET)
-    .upload(path, file, { upsert: false, contentType: file.type });
+  const { error } = await supabase.storage.from(bucket).upload(path, body, { upsert: false, contentType: type });
+  if (error) throw new UploadError("failed", error.message);
 
-  if (uploadError) {
-    return { url: null, error: uploadError.message };
-  }
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
 
-  const { data } = supabase.storage.from(PRODUCT_IMAGES_BUCKET).getPublicUrl(path);
-  return { url: data.publicUrl, error: null };
+export function uploadProductImage(supabase: Client, file: File): Promise<string> {
+  return uploadImage(supabase, file, { bucket: PRODUCT_IMAGES_BUCKET, folder: "products", maxSide: 1200 });
 }

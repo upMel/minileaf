@@ -42,8 +42,7 @@ const LanguageContext = createContext<LanguageContextValue>({
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   // Always start from the default so server and client render the same markup.
-  // A stored preference is applied after hydration, mirroring how ThemeToggle
-  // handles the saved palette.
+  // A stored preference is applied after hydration.
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
   /* eslint-disable react-hooks/set-state-in-effect */

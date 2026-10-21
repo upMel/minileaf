@@ -1,25 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
-import { ThemeProvider } from "next-themes";
+import localFont from "next/font/local";
+
 import { LanguageProvider, DEFAULT_LOCALE } from "@/context/LanguageContext";
 import "./globals.css";
 
-// Geist ships only latin/latin-ext/cyrillic — it has no Greek glyphs, so Greek
-// copy silently fell back to a system font. Inter covers Greek and is the
-// closest match; JetBrains Mono is the mono counterpart that also covers Greek.
-const appSans = Inter({
-  variable: "--font-app-sans",
-  subsets: ["latin", "greek"],
-});
-
-const appMono = JetBrains_Mono({
-  variable: "--font-app-mono",
-  subsets: ["latin", "greek"],
+// Kaimakidis brand display face (storefront headings).
+const brand = localFont({
+  src: "./fonts/kaimakidis-brand.woff",
+  variable: "--font-brand",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "MiniLeaf",
-  description: "Φυλλάδιο προσφορών για το μίνι μάρκετ σας",
+  title: {
+    default: "Mini Market Καιμακίδης",
+    template: "%s | Καιμακίδης",
+  },
+  description: "Mini Market Καιμακίδης — στη γειτονιά σου, από το 1965. Προσφορές της εβδομάδας, φυλλάδιο και όλα τα προϊόντα μας.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -31,7 +28,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#f8f5eb",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -43,18 +41,16 @@ export default function RootLayout({
     <html
       lang={DEFAULT_LOCALE}
       suppressHydrationWarning
-      className={`${appSans.variable} ${appMono.variable} h-full antialiased`}
+      className={brand.variable}
     >
-      <body className="min-h-full flex flex-col">
-        {/* Restore palette and language before first paint to avoid a flash */}
+      <body>
+        {/* Restore the language before first paint to avoid a flash of the wrong <html lang> */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var p=localStorage.getItem('palette');if(p)document.documentElement.dataset.palette=p;var l=localStorage.getItem('locale');if(l==='el'||l==='en')document.documentElement.lang=l;}catch(e){}`,
+            __html: `try{var l=localStorage.getItem('locale');if(l==='el'||l==='en')document.documentElement.lang=l;}catch(e){}`,
           }}
         />
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <LanguageProvider>{children}</LanguageProvider>
-        </ThemeProvider>
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

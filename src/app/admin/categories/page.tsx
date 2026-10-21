@@ -1,32 +1,50 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useSyncExternalStore } from "react";
 
-import { useAdminAuthContext } from "@/context/AdminAuthContext";
 import { useT } from "@/context/LanguageContext";
 
-import CategoryManager from "../CategoryManager";
-import { categoriesQueryOptions } from "./_queries";
+import CategoriesEditor from "./CategoriesEditor";
+import OfferGroupsEditor from "./OfferGroupsEditor";
 
-export default function CategoriesPage() {
-  const { supabase, adminState } = useAdminAuthContext();
-  const t = useT();
-  const isAuthorized = adminState.status === "authorized";
+const GROUPS_HASH = "#groups";
 
-  const { data: dbCategories = [] } = useQuery(
-    categoriesQueryOptions(supabase!, isAuthorized),
-  );
-
-  return (
-    <div className="p-4 sm:p-6">
-      <h1 className="mb-4 text-lg font-semibold text-black dark:text-zinc-50">{t.categories.title}</h1>
-      <div className="max-w-3xl rounded-2xl border border-black/10 bg-white dark:border-white/15 dark:bg-zinc-900">
-        <CategoryManager
-          supabase={supabase!}
-          categories={dbCategories}
-        />
-      </div>
-    </div>
-  );
+function subscribe(onChange: () => void) {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
 }
 
+/** Κατηγορίες: the catalogue's categories, and the offer groups of the Προσφορές page (#groups). */
+export default function AdminCategoriesPage() {
+  const a = useT().admin;
+  const c = a.categories;
+  const groups = useSyncExternalStore(
+    subscribe,
+    () => window.location.hash === GROUPS_HASH,
+    () => false,
+  );
+
+  function show(next: boolean) {
+    if (next === groups) return;
+    window.location.hash = next ? GROUPS_HASH : "";
+  }
+
+  return (
+    <>
+      <div className="ka-intro">
+        <p>{a.eyebrow}</p>
+        <h1>{c.title}</h1>
+        <span>{c.subtitle}</span>
+      </div>
+      <div className="ka-seg ka-subtabs" role="group" aria-label={c.title}>
+        <button type="button" aria-pressed={!groups} onClick={() => show(false)}>
+          {c.viewCategories}
+        </button>
+        <button type="button" aria-pressed={groups} onClick={() => show(true)}>
+          {c.viewGroups}
+        </button>
+      </div>
+      {groups ? <OfferGroupsEditor /> : <CategoriesEditor />}
+    </>
+  );
+}
