@@ -110,3 +110,36 @@ export function getBannerTemplate(id: string): BannerTemplate | undefined {
 export function bannerGridAreas(template: BannerTemplate): string {
   return template.areas.map((row) => `"${row}"`).join(" ");
 }
+
+/**
+ * Shape of the whole banner on a computer (width / height). Every page uses
+ * it, so a template's boxes always fit the same frame.
+ */
+export const BANNER_ASPECT = { width: 16, height: 7 } as const;
+/** Each box is shown alone on a phone, in this shape. */
+export const BANNER_PHONE_ASPECT = { width: 16, height: 9 } as const;
+
+/**
+ * Picture size (px) that fills one box exactly on a computer, for the admin's
+ * "best size" hint. Derived from the template's columns and areas.
+ */
+export function bannerSlotSize(template: BannerTemplate, slotId: string, frameWidth = 1600): { width: number; height: number } {
+  const fr = template.columns.split(/\s+/).map((c) => parseFloat(c) || 1);
+  const total = fr.reduce((a, b) => a + b, 0);
+  const grid = template.areas.map((row) => row.trim().split(/\s+/));
+  const cols = new Set<number>();
+  let rows = 0;
+  for (const row of grid) {
+    let inRow = false;
+    row.forEach((name, i) => {
+      if (name === slotId) {
+        cols.add(i);
+        inRow = true;
+      }
+    });
+    if (inRow) rows += 1;
+  }
+  const frameHeight = (frameWidth * BANNER_ASPECT.height) / BANNER_ASPECT.width;
+  const width = [...cols].reduce((sum, i) => sum + (fr[i] ?? 1), 0) / total;
+  return { width: Math.round(frameWidth * width), height: Math.round((frameHeight * rows) / Math.max(1, grid.length)) };
+}

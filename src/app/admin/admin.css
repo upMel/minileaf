@@ -936,12 +936,14 @@
 /* Page list */
 .ka-fpages {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   margin: 0 0 14px;
   padding: 0;
   list-style: none;
 }
 .ka-fpages li {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1209,6 +1211,118 @@
   max-width: 26ch;
 }
 
+/* ── Banner builder (reuses the flyer builder's layout and page list) ──────── */
+.ka-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 22px;
+  padding: 14px 16px;
+  border: 1px solid #f1d9a9;
+  border-radius: 12px;
+  background: #fff8e8;
+  font-size: 14px;
+  color: #5f4a1f;
+}
+.ka-notice b {
+  font-size: 15px;
+  color: #8a5a00;
+}
+.ka-off {
+  font-style: normal;
+  font-weight: 700;
+  color: #9b252c;
+}
+.ka-fpage-pic.wide {
+  width: 64px;
+  border: 0;
+  background: none;
+}
+.ka-bmini {
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 2px;
+  width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+.ka-bmini i {
+  border-radius: 2px;
+  background: #f2b9a2;
+}
+.ka-bmini i + i {
+  background: #f6d9a8;
+}
+.ka-btpl-choices {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+}
+.ka-bprev {
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(100deg, #fdf3dc 0%, #fbe3c0 100%);
+  box-shadow: 0 6px 20px rgba(25, 38, 30, 0.08);
+}
+.ka-bprev-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #ecdcbc;
+  border-radius: 8px;
+  background: #fff;
+}
+.ka-bprev-slot.empty {
+  border-style: dashed;
+  background: #fffaf0;
+}
+.ka-bprev-slot:hover {
+  border-color: var(--green);
+}
+.ka-bprev-slot[aria-pressed="true"] {
+  border: 2px solid var(--focus);
+  box-shadow: 0 0 0 3px rgba(213, 136, 49, 0.25);
+}
+.ka-bprev-slot .ka-tpl-num {
+  z-index: 1;
+}
+.ka-bprev-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.ka-bprev-product {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 22px 8px 8px;
+  text-align: center;
+}
+.ka-bslot-wrap {
+  margin-bottom: 8px;
+}
+.ka-bslot-editor {
+  padding: 16px;
+  border: 1px solid var(--green-line);
+  border-radius: 12px;
+  background: #fbfdf9;
+}
 @media (max-width: 1000px) {
   .ka-flyer {
     grid-template-columns: minmax(0, 1fr);

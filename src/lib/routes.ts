@@ -3,6 +3,8 @@
 export const routes = {
   home: () => "/",
   deals: () => "/deals",
+  /** The Προσφορές page narrowed to one offer group. */
+  offerGroup: (id: string) => `/deals?group=${encodeURIComponent(id)}`,
   flyer: () => "/flyer",
   store: () => "/store",
   category: (id: string, subcategoryId?: string) =>

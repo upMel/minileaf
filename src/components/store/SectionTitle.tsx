@@ -2,7 +2,9 @@
 
 import { useT } from "@/context/LanguageContext";
 
-type HomeKey = keyof ReturnType<typeof useT>["store"]["home"];
+type Home = ReturnType<typeof useT>["store"]["home"];
+/** Only the plain-text entries (not the ones that take arguments). */
+type HomeKey = { [K in keyof Home]: Home[K] extends string ? K : never }[keyof Home];
 
 /** Localized section heading (server pages can't read the language choice). */
 export default function SectionTitle({ id, textKey }: { id: string; textKey: HomeKey }) {

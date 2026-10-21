@@ -4,6 +4,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { fetchCategories } from "@/services/categories";
+import { listOfferGroups, type OfferGroupRecord } from "@/services/offer-groups";
 import { fetchProducts } from "@/services/products";
 import type { CategoryRow, ProductRow } from "@/types/admin";
 
@@ -29,6 +30,17 @@ export function adminProductsQueryOptions(supabase: Client, enabled: boolean) {
   return queryOptions<ProductRow[]>({
     queryKey: ADMIN_PRODUCTS_KEY,
     queryFn: () => fetchProducts(supabase),
+    enabled,
+  });
+}
+
+export const OFFER_GROUPS_KEY = ["offer-groups"] as const;
+
+/** Offer groups (Προσφορές page). Shared by the banner links and the categories page. */
+export function offerGroupsQueryOptions(supabase: Client, enabled: boolean) {
+  return queryOptions<OfferGroupRecord[]>({
+    queryKey: OFFER_GROUPS_KEY,
+    queryFn: () => listOfferGroups(supabase),
     enabled,
   });
 }

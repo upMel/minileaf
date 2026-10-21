@@ -12,8 +12,11 @@ import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { escapeLike, foldGreek, searchTerms } from "@/lib/greek";
 import { FALLBACK_CATEGORY_ROWS, FALLBACK_FLYER, FALLBACK_OFFER_GROUP_ROWS, FALLBACK_PRODUCT_ROWS } from "@/lib/data/fallback";
+import { getBannerTemplate } from "@/lib/banner-templates";
 import { LAYOUT_TEMPLATES } from "@/lib/layout-templates";
+import { routes } from "@/lib/routes";
 import {
+  BANNER_PAGE_FIELDS,
   buildCategoryTree,
   CATALOG_FIELDS,
   CATEGORY_FIELDS,
@@ -22,9 +25,13 @@ import {
   OFFER_GROUP_FIELDS,
   parseStoreInfo,
   STORE_CONFIG_KEY,
+  toBannerPage,
   toFlyerPage,
   toOfferGroup,
   toProduct,
+  type BannerLink,
+  type BannerPage,
+  type BannerPageRow,
   type CatalogRow,
   type Category,
   type CategoryRow,
@@ -396,3 +403,108 @@ export async function getActiveFlyer(): Promise<ResolvedFlyer | null> {
     pages: resolveFlyerPages(pages, products),
   };
 }
+
+// ── Home banner ─────────────────────────────────────────────────────────────
+
+export type ResolvedBannerSlot =
+  | { kind: "product"; product: Product }
+  | { kind: "image"; imageUrl: string; alt: string; href: string | null; external: boolean };
+
+export type ResolvedBannerPage = {
+  id: string;
+  templateId: string;
+  /** Slot id → what to draw there; empty slots are left out. */
+  slots: Record<string, ResolvedBannerSlot>;
+};
+
+export type ResolvedBanner = {
+  pages: ResolvedBannerPage[];
+  /** True when the admin hasn't set up a banner and the shop shows its offers instead. */
+  automatic: boolean;
+};
+
+const AUTO_BANNER_SIZE = 8;
+
+function bannerHref(link: BannerLink | null | undefined): { href: string | null; external: boolean } {
+  if (!link) return { href: null, external: false };
+  switch (link.kind) {
+    case "product":
+      return { href: routes.product(link.target), external: false };
+    case "category":
+      return { href: routes.category(link.target), external: false };
+    case "offer_group":
+      return { href: routes.offerGroup(link.target), external: false };
+    case "deals":
+      return { href: routes.deals(), external: false };
+    case "flyer":
+      return { href: routes.flyer(), external: false };
+    case "url":
+      return { href: link.target, external: true };
+  }
+}
+
+function resolveBannerPages(pages: BannerPage[], products: Map<string, Product>): ResolvedBannerPage[] {
+  const out: ResolvedBannerPage[] = [];
+  for (const page of pages) {
+    const template = getBannerTemplate(page.templateId);
+    if (!template) continue;
+    const slots: Record<string, ResolvedBannerSlot> = {};
+    for (const { id } of template.slots) {
+      const slot = page.slots[id];
+      if (!slot) continue;
+      if (slot.type === "product") {
+        const product = products.get(slot.product_id);
+        if (product) slots[id] = { kind: "product", product };
+      } else {
+        slots[id] = { kind: "image", imageUrl: slot.image_url, alt: slot.alt ?? "", ...bannerHref(slot.link) };
+      }
+    }
+    if (Object.keys(slots).length > 0) out.push({ id: page.id, templateId: template.id, slots });
+  }
+  return out;
+}
+
+/** No banner set up: the week's ΣΟΥΠΕΡ ΤΙΜΗ products (else any offer), one per page. */
+async function automaticBanner(): Promise<ResolvedBanner | null> {
+  let offers = await getProducts({ offers: "super", limit: AUTO_BANNER_SIZE });
+  if (offers.length === 0) offers = await getProducts({ offers: "any", limit: AUTO_BANNER_SIZE });
+  if (offers.length === 0) return null;
+  return {
+    automatic: true,
+    pages: offers.map((product) => ({ id: `auto-${product.id}`, templateId: "single", slots: { main: { kind: "product", product } } })),
+  };
+}
+
+/**
+ * The home-page banner: the visible banner pages in order, with hidden or
+ * deleted products dropped and links turned into addresses. Falls back to
+ * the shop's offers when no page has anything to show.
+ */
+export const getBanner = cache(async (): Promise<ResolvedBanner | null> => {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) return automaticBanner();
+
+  const { data, error } = await supabase
+    .from("banner_pages")
+    .select(BANNER_PAGE_FIELDS)
+    .eq("is_visible", true)
+    .order("page_order", { ascending: true });
+  if (error) console.error("[storefront] banner:", error.message);
+  const pages = ((data ?? []) as BannerPageRow[]).map(toBannerPage);
+
+  const ids = [
+    ...new Set(
+      pages.flatMap((p) => Object.values(p.slots).flatMap((s) => (s?.type === "product" && UUID.test(s.product_id) ? [s.product_id] : []))),
+    ),
+  ];
+  let products = new Map<string, Product>();
+  if (ids.length > 0) {
+    const { data: rows, error: productsError } = await supabase.from("catalog").select(CATALOG_FIELDS).in("id", ids);
+    if (productsError) console.error("[storefront] banner products:", productsError.message);
+    const list = await withCategoryImages(((rows ?? []) as CatalogRow[]).map(toProduct));
+    products = new Map(list.map((p) => [p.id, p]));
+  }
+
+  const resolved = resolveBannerPages(pages, products);
+  return resolved.length > 0 ? { pages: resolved, automatic: false } : automaticBanner();
+});

@@ -28,6 +28,7 @@ import { SITE_IMAGES_BUCKET, UploadError, uploadImage } from "@/services/storage
 import ImageField from "../../_components/ImageField";
 import ProductPicker from "../../_components/ProductPicker";
 import { productImageResolver } from "../../_components/product-image";
+import { errorText, useAutoSave } from "../../_components/useAutoSave";
 import { adminProductsQueryOptions, categoriesQueryOptions } from "../../products/_queries";
 import TemplatePreview, { TemplateMini } from "../TemplatePreview";
 import { FLYERS_KEY, flyerKey, flyerQueryOptions } from "../_queries";
@@ -57,20 +58,16 @@ export default function FlyerEditorPage() {
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
-  const [pending, setPending] = useState(0);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [upload, setUpload] = useState<{ done: number; total: number } | null>(null);
   const [confirm, setConfirm] = useState<"page" | "flyer" | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
-  // Writes go out one after another, so a slower request never overwrites a newer one.
-  const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const key = flyerKey(id);
+  const { save, run, pending, saved, error, setError } = useAutoSave<FlyerDetail>(key, FLYERS_KEY);
 
   const productsById = useMemo(() => new Map((products.data ?? []).map((p) => [p.id, p])), [products.data]);
   const imageFor = useMemo(() => productImageResolver(categories.data ?? []), [categories.data]);
 
-  const key = flyerKey(id);
   const data = flyer.data;
   const pages = data?.pages ?? [];
   const pageIndex = Math.max(
@@ -80,31 +77,6 @@ export default function FlyerEditorPage() {
   const page: FlyerPageRecord | undefined = pages[pageIndex];
   const landscape = data?.orientation === "landscape";
   const aspect = landscape ? "297 / 210" : "210 / 297";
-
-  function message(e: unknown) {
-    return `${a.common.failed} (${e instanceof Error ? e.message : String(e)})`;
-  }
-
-  /** Shows the change at once, then writes it; on failure reloads what's really saved. */
-  function save(local: (d: FlyerDetail) => FlyerDetail, remote: () => Promise<unknown>) {
-    const current = queryClient.getQueryData<FlyerDetail>(key);
-    if (current) queryClient.setQueryData(key, local(current));
-    setPending((n) => n + 1);
-    setSaved(false);
-    setError(null);
-    const run = queue.current.then(remote);
-    queue.current = run.catch(() => undefined);
-    return run
-      .then(() => setSaved(true))
-      .catch(async (e: unknown) => {
-        setError(message(e));
-        await queryClient.invalidateQueries({ queryKey: key });
-      })
-      .finally(() => {
-        setPending((n) => n - 1);
-        void queryClient.invalidateQueries({ queryKey: FLYERS_KEY, exact: true });
-      });
-  }
 
   function updatePage(pageId: string, patch: Partial<Pick<FlyerPageRecord, "template_id" | "slots" | "image_url">>) {
     void save(
@@ -148,27 +120,25 @@ export default function FlyerEditorPage() {
   const lastOrder = pages.reduce((max, p) => Math.max(max, p.page_order), -1);
 
   async function addPages(make: (order: number, i: number) => Promise<string>, count: number) {
-    setError(null);
-    setPending((n) => n + 1);
     let newest: string | null = null;
-    try {
-      for (let i = 0; i < count; i += 1) {
-        newest = await make(lastOrder + i, i);
-        setUpload((u) => (u ? { ...u, done: i + 1 } : u));
-      }
-      setSaved(true);
-    } catch (e) {
-      const kind = e instanceof UploadError ? e.kind : null;
-      setError(
-        kind === "not-image" ? a.products.errors.imageType : kind === "too-large" ? a.image.tooLarge(CANVA_MAX_MB) : message(e),
-      );
-    } finally {
-      setPending((n) => n - 1);
-      setUpload(null);
-      await queryClient.invalidateQueries({ queryKey: key });
-      void queryClient.invalidateQueries({ queryKey: FLYERS_KEY, exact: true });
-      if (newest) selectPage(newest);
-    }
+    await run(
+      async () => {
+        for (let i = 0; i < count; i += 1) {
+          newest = await make(lastOrder + i, i);
+          setUpload((u) => (u ? { ...u, done: i + 1 } : u));
+        }
+      },
+      (e) => {
+        const kind = e instanceof UploadError ? e.kind : null;
+        return kind === "not-image"
+          ? a.products.errors.imageType
+          : kind === "too-large"
+            ? a.image.tooLarge(CANVA_MAX_MB)
+            : errorText(a.common.failed, e);
+      },
+    );
+    setUpload(null);
+    if (newest) selectPage(newest);
   }
 
   function addTemplatePage() {
@@ -209,7 +179,7 @@ export default function FlyerEditorPage() {
       await queryClient.invalidateQueries({ queryKey: FLYERS_KEY, exact: true });
       router.push("/admin/flyers");
     } catch (e) {
-      setError(message(e));
+      setError(errorText(a.common.failed, e));
     }
   }
 
