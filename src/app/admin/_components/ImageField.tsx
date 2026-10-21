@@ -24,6 +24,8 @@ type Props = {
   maxMb?: number;
   /** Whether the picture can be removed (a Canva flyer page can only be replaced). */
   removable?: boolean;
+  /** Widest the preview gets, in px (small square pictures don't need the whole card). */
+  previewMax?: number;
 };
 
 /** Upload (or replace / remove) one picture for the site: banners, flyer pages, categories. */
@@ -38,6 +40,7 @@ export default function ImageField({
   disabled,
   maxMb = 8,
   removable = true,
+  previewMax,
 }: Props) {
   const t = useT().admin;
   const p = t.products;
@@ -68,14 +71,17 @@ export default function ImageField({
       <span>{label}</span>
       <div className="ka-upload">
         {value ? (
-          <div className="ka-upload-preview" style={aspect ? { aspectRatio: aspect, height: "auto", maxHeight: 420 } : undefined}>
+          <div
+            className="ka-upload-preview"
+            style={aspect ? { aspectRatio: aspect, height: "auto", maxHeight: 420, maxWidth: previewMax } : undefined}
+          >
             {showable && <img src={value} alt="" />}
           </div>
         ) : (
           <button
             type="button"
             className="ka-upload-placeholder ka-upload-button"
-            style={aspect ? { aspectRatio: aspect, minHeight: 0 } : undefined}
+            style={aspect ? { aspectRatio: aspect, minHeight: 0, maxWidth: previewMax } : undefined}
             onClick={() => fileRef.current?.click()}
             disabled={disabled || busy}
           >

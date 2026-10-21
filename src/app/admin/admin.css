@@ -210,6 +210,8 @@
   line-height: 1.55;
 }
 .ka-count {
+  flex: none;
+  white-space: nowrap;
   padding: 4px 10px;
   border-radius: 20px;
   background: #edf1e9;
@@ -917,13 +919,13 @@
   width: 50px;
   height: 36px;
 }
-.ka-flyer {
+.ka-builder {
   display: grid;
   grid-template-columns: minmax(0, 330px) minmax(0, 1fr);
   gap: 26px;
   align-items: start;
 }
-.ka-flyer-side {
+.ka-builder-side {
   display: grid;
   gap: 26px;
   min-width: 0;
@@ -934,7 +936,7 @@
 }
 
 /* Page list */
-.ka-fpages {
+.ka-rows {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 6px;
@@ -942,7 +944,7 @@
   padding: 0;
   list-style: none;
 }
-.ka-fpages li {
+.ka-rows li {
   min-width: 0;
   display: flex;
   align-items: center;
@@ -951,11 +953,11 @@
   border: 1px solid transparent;
   border-radius: 10px;
 }
-.ka-fpages li.current {
+.ka-rows li.current {
   border-color: var(--green-line);
   background: #f1f6ee;
 }
-.ka-fpage {
+.ka-row {
   display: flex;
   flex: 1;
   align-items: center;
@@ -966,7 +968,7 @@
   background: none;
   text-align: left;
 }
-.ka-fpage-pic {
+.ka-row-pic {
   display: block;
   flex: none;
   width: 46px;
@@ -975,37 +977,34 @@
   border-radius: 4px;
   background: #fff;
 }
-.ka-fpage-pic img {
+.ka-row-pic img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.ka-fpage-pic .ka-tpl-mini {
+.ka-row-pic .ka-tpl-mini {
   width: 100%;
   border: 0;
   border-radius: 0;
 }
-.ka-fpage-text {
+.ka-row-text {
   min-width: 0;
 }
-.ka-fpage-text b {
+.ka-row-text b {
   display: block;
   font-size: 14px;
 }
-.ka-fpage-text small {
+.ka-row-text small {
   display: block;
   font-size: 12px;
   color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.ka-fpage-tools {
+.ka-row-tools {
   display: flex;
   gap: 4px;
 }
-.ka-fpage-tools button {
+.ka-row-tools button {
   width: 34px;
   height: 34px;
   border: 1px solid #d6dfd2;
@@ -1014,11 +1013,11 @@
   color: var(--green);
   font-weight: 800;
 }
-.ka .ka-fpage-tools button:disabled {
+.ka .ka-row-tools button:disabled {
   opacity: 0.3;
   cursor: default;
 }
-.ka-fpages-add {
+.ka-rows-add {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -1233,7 +1232,7 @@
   font-weight: 700;
   color: #9b252c;
 }
-.ka-fpage-pic.wide {
+.ka-row-pic.wide {
   width: 64px;
   border: 0;
   background: none;
@@ -1324,7 +1323,7 @@
   background: #fbfdf9;
 }
 @media (max-width: 1000px) {
-  .ka-flyer {
+  .ka-builder {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -1355,5 +1354,112 @@
   .ka-list .ka-row-actions {
     grid-column: 1 / -1;
     justify-content: flex-start;
+  }
+}
+
+/* ── Categories & offer groups ────────────────────────────────────────────── */
+.ka-subtabs {
+  max-width: 420px;
+  margin: -8px 0 26px;
+  background: #fff;
+}
+.ka-add-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ka-add-row .ka-input {
+  flex: 1;
+  min-width: 0;
+}
+.ka-rows .ka-thumb {
+  border: 1px solid var(--line);
+}
+.ka-sync {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.ka-sync .ka-success {
+  margin: 4px 0 0;
+}
+.ka-subs {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.ka-subs li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+}
+.ka-subs li > small {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ka-subs .ka-input {
+  padding: 9px 10px;
+  font-size: 15px;
+}
+.ka-fieldset legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ka-checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 14px;
+  margin-top: 6px;
+}
+.ka-checklist label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.ka-checklist label:hover {
+  background: #f4f7f1;
+}
+.ka-checklist input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--green);
+}
+@media (max-width: 640px) {
+  .ka-subs li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name tools"
+      "count del";
+    row-gap: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eceee7;
+  }
+  .ka-subs li > .ka-input {
+    grid-area: name;
+  }
+  .ka-subs li > small {
+    grid-area: count;
+  }
+  .ka-subs li > .ka-row-tools {
+    grid-area: tools;
+  }
+  .ka-subs li > :last-child {
+    grid-area: del;
+    justify-self: end;
   }
 }

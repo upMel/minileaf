@@ -41,14 +41,14 @@ export function useAutoSave<T>(key: QueryKey, alsoRefresh?: QueryKey) {
     return job;
   }
 
-  function save(local: (data: T) => T, remote: () => Promise<unknown>): Promise<void> {
+  function save(local: (data: T) => T, remote: () => Promise<unknown>, describe?: (e: unknown) => string): Promise<void> {
     const current = queryClient.getQueryData<T>(key);
     if (current !== undefined) queryClient.setQueryData(key, local(current));
     begin();
     return enqueue(remote)
       .then(() => setSaved(true))
       .catch(async (e: unknown) => {
-        setError(errorText(failed, e));
+        setError(describe ? describe(e) : errorText(failed, e));
         await queryClient.invalidateQueries({ queryKey: key });
       })
       .finally(end);

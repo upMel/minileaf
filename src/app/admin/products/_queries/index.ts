@@ -11,11 +11,12 @@ import type { CategoryRow, ProductRow } from "@/types/admin";
 type Client = NonNullable<ReturnType<typeof createSupabaseBrowserClient>>;
 
 export const ADMIN_PRODUCTS_KEY = ["admin-products"] as const;
+export const CATEGORIES_KEY = ["categories"] as const;
 
 /** Categories for the editor and the list. Shared query key with the categories page. */
 export function categoriesQueryOptions(supabase: Client, enabled: boolean) {
   return queryOptions<CategoryRow[]>({
-    queryKey: ["categories"],
+    queryKey: CATEGORIES_KEY,
     queryFn: async () => {
       const { data, error } = await fetchCategories(supabase);
       if (error) throw new Error(error);

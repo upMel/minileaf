@@ -255,8 +255,8 @@ export default function FlyerEditorPage() {
         </p>
       )}
 
-      <div className="ka-flyer">
-        <div className="ka-flyer-side">
+      <div className="ka-builder">
+        <div className="ka-builder-side">
           <section className="ka-card">
             <div className="ka-card-title">
               <h2>{f.settings}</h2>
@@ -307,26 +307,26 @@ export default function FlyerEditorPage() {
               <span className="ka-count">{pages.length}</span>
             </div>
             {pages.length > 0 && (
-              <ol className="ka-fpages">
+              <ol className="ka-rows">
                 {pages.map((p, i) => {
                   const tpl = p.kind === "template" ? getTemplate(p.template_id) : null;
                   return (
                     <li key={p.id} className={p.id === page?.id ? "current" : undefined}>
                       <button
                         type="button"
-                        className="ka-fpage"
+                        className="ka-row"
                         aria-current={p.id === page?.id ? "true" : undefined}
                         onClick={() => selectPage(p.id)}
                       >
-                        <span className="ka-fpage-pic" style={{ aspectRatio: aspect }}>
+                        <span className="ka-row-pic" style={{ aspectRatio: aspect }}>
                           {tpl ? <TemplateMini template={tpl} landscape={landscape} /> : p.image_url && <img src={p.image_url} alt="" loading="lazy" />}
                         </span>
-                        <span className="ka-fpage-text">
+                        <span className="ka-row-text">
                           <b>{f.pageN(i + 1)}</b>
                           <small>{tpl ? templateLabel(t, tpl.id, tpl).name : f.canvaPage}</small>
                         </span>
                       </button>
-                      <span className="ka-fpage-tools">
+                      <span className="ka-row-tools">
                         <button type="button" aria-label={`${f.moveUp}: ${f.pageN(i + 1)}`} disabled={i === 0} onClick={() => move(i, -1)}>
                           ↑
                         </button>
@@ -350,7 +350,7 @@ export default function FlyerEditorPage() {
                 <p>{f.noPagesText}</p>
               </div>
             )}
-            <div className="ka-fpages-add">
+            <div className="ka-rows-add">
               <button type="button" className="ka-btn-small" disabled={Boolean(upload)} onClick={addTemplatePage}>
                 {f.addTemplatePage}
               </button>
@@ -376,7 +376,7 @@ export default function FlyerEditorPage() {
         </div>
 
         {page && (
-          <section className="ka-card ka-flyer-main" aria-label={f.pageN(pageIndex + 1)}>
+          <section className="ka-card ka-builder-main" aria-label={f.pageN(pageIndex + 1)}>
             <div className="ka-card-title">
               <h2>
                 {f.pageN(pageIndex + 1)}

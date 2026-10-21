@@ -151,8 +151,8 @@ export default function AdminBannerPage() {
         </div>
       )}
 
-      <div className="ka-flyer">
-        <div className="ka-flyer-side">
+      <div className="ka-builder">
+        <div className="ka-builder-side">
           <section className="ka-card">
             <div className="ka-card-title">
               <h2>{b.pagesTitle}</h2>
@@ -160,21 +160,21 @@ export default function AdminBannerPage() {
             </div>
             {pagesQuery.isPending && enabled && <p className="ka-hint">{a.common.loading}</p>}
             {pages.length > 0 && (
-              <ol className="ka-fpages">
+              <ol className="ka-rows">
                 {pages.map((p, i) => {
                   const tpl = templateOf(p.template_id);
                   return (
                     <li key={p.id} className={p.id === page?.id ? "current" : undefined}>
                       <button
                         type="button"
-                        className="ka-fpage"
+                        className="ka-row"
                         aria-current={p.id === page?.id ? "true" : undefined}
                         onClick={() => selectPage(p.id)}
                       >
-                        <span className="ka-fpage-pic wide">
+                        <span className="ka-row-pic wide">
                           <BannerMini template={tpl} />
                         </span>
-                        <span className="ka-fpage-text">
+                        <span className="ka-row-text">
                           <b>{b.pageN(i + 1)}</b>
                           <small>
                             {b.templates[tpl.id] ?? tpl.name} · {b.boxes(filled(p))}
@@ -182,7 +182,7 @@ export default function AdminBannerPage() {
                           </small>
                         </span>
                       </button>
-                      <span className="ka-fpage-tools">
+                      <span className="ka-row-tools">
                         <button type="button" aria-label={`${a.flyers.moveUp}: ${b.pageN(i + 1)}`} disabled={i === 0} onClick={() => move(i, -1)}>
                           ↑
                         </button>
@@ -206,7 +206,7 @@ export default function AdminBannerPage() {
                 <p>{b.noPagesText}</p>
               </div>
             )}
-            <div className="ka-fpages-add">
+            <div className="ka-rows-add">
               <button type="button" className="ka-btn-small" disabled={!enabled || pending > 0} onClick={() => void addPage()}>
                 {b.addPage}
               </button>
@@ -218,7 +218,7 @@ export default function AdminBannerPage() {
         </div>
 
         {page && template && (
-          <section className="ka-card ka-flyer-main" aria-label={b.pageN(pageIndex + 1)}>
+          <section className="ka-card ka-builder-main" aria-label={b.pageN(pageIndex + 1)}>
             <div className="ka-card-title">
               <h2>
                 {b.pageN(pageIndex + 1)}

@@ -1,11 +1,31 @@
+// Catalogue categories (table `categories`: top level + one level of
+// subcategories), written with the admin's session (row-level security:
+// admins only). Products point at a category or a subcategory; the database
+// refuses to delete a category that still has products.
+
 import type { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { CategoryRow } from "@/types/admin";
 
 type Client = NonNullable<ReturnType<typeof createSupabaseBrowserClient>>;
 
-export async function fetchCategories(
-  supabase: Client,
-): Promise<{ data: CategoryRow[]; error: string | null }> {
+/** Postgres error codes the admin turns into plain messages. */
+export const FK_VIOLATION = "23503";
+export const UNIQUE_VIOLATION = "23505";
+
+export class CategoryError extends Error {
+  constructor(
+    message: string,
+    public code?: string,
+  ) {
+    super(message);
+  }
+}
+
+function fail(error: { message: string; code?: string } | null): void {
+  if (error) throw new CategoryError(error.message, error.code);
+}
+
+export async function fetchCategories(supabase: Client): Promise<{ data: CategoryRow[]; error: string | null }> {
   const { data, error } = await supabase
     .from("categories")
     .select("id,name,parent_id,sort_order,image_url")
@@ -15,112 +35,110 @@ export async function fetchCategories(
   return { data: data as CategoryRow[], error: null };
 }
 
-export async function insertCategory(
-  supabase: Client,
-  name: string,
-  parentId?: string,
-): Promise<{ error: string | null }> {
-  const { error } = await supabase
+/** Adds a category (or a subcategory when `parentId` is given) at the end; returns its id. */
+export async function addCategory(supabase: Client, name: string, parentId: string | null, sortOrder: number): Promise<string> {
+  const { data, error } = await supabase
     .from("categories")
-    .insert({ name: name.trim(), parent_id: parentId ?? null });
-  return { error: error?.message ?? null };
+    .insert({ name: name.trim(), parent_id: parentId, sort_order: sortOrder })
+    .select("id")
+    .single();
+  fail(error);
+  return data!.id as string;
 }
 
-export async function deleteCategory(
+export async function updateCategory(
   supabase: Client,
   id: string,
-): Promise<{ error: string | null }> {
+  patch: { name?: string; image_url?: string | null },
+): Promise<void> {
+  const { error } = await supabase.from("categories").update(patch).eq("id", id);
+  fail(error);
+}
+
+/** Deletes a category and its subcategories. Fails with FK_VIOLATION while products still use them. */
+export async function deleteCategory(supabase: Client, id: string): Promise<void> {
   const { error } = await supabase.from("categories").delete().eq("id", id);
-  return { error: error?.message ?? null };
+  fail(error);
 }
 
-export async function renameCategory(
-  supabase: Client,
-  id: string,
-  name: string,
-): Promise<{ error: string | null }> {
-  const { error } = await supabase.from("categories").update({ name: name.trim() }).eq("id", id);
-  return { error: error?.message ?? null };
+/** Writes 0…n-1 as sort_order in the given order (only rows that changed). */
+export async function reorderCategories(supabase: Client, list: CategoryRow[]): Promise<void> {
+  const updates = list
+    .map((c, i) => ({ id: c.id, from: c.sort_order, to: i }))
+    .filter((u) => u.from !== u.to)
+    .map((u) => supabase.from("categories").update({ sort_order: u.to }).eq("id", u.id));
+  for (const { error } of await Promise.all(updates)) fail(error);
 }
 
-/** Import a list of {name, parentId?} pairs — skips names that already exist at the same level. */
-export async function importCategories(
+// ── e-katanalotis sync ──────────────────────────────────────────────────────
+
+/** Inserts the names that don't exist yet at the same level; returns how many were added. */
+async function importCategories(
   supabase: Client,
   entries: Array<{ name: string; sort_order: number; parent_id: string | null }>,
-): Promise<{ error: string | null }> {
-  if (entries.length === 0) return { error: null };
-
-  // Fetch existing names to avoid duplicates
-  const { data: existing } = await supabase.from("categories").select("name,parent_id");
-  const existingSet = new Set(
-    (existing ?? []).map(
-      (c: { name: string; parent_id: string | null }) =>
-        `${c.name.toLowerCase()}::${c.parent_id ?? ""}`,
-    ),
+): Promise<number> {
+  if (entries.length === 0) return 0;
+  const { data: existing, error } = await supabase.from("categories").select("name,parent_id");
+  fail(error);
+  const seen = new Set(
+    (existing ?? []).map((c: { name: string; parent_id: string | null }) => `${c.name.toLowerCase()}::${c.parent_id ?? ""}`),
   );
-
-  const toInsert = entries.filter(
-    (e) => !existingSet.has(`${e.name.toLowerCase()}::${e.parent_id ?? ""}`),
-  );
-
-  if (toInsert.length === 0) return { error: null };
-
-  const { error } = await supabase.from("categories").insert(toInsert);
-  return { error: error?.message ?? null };
+  const toInsert = entries.filter((e) => !seen.has(`${e.name.toLowerCase()}::${e.parent_id ?? ""}`));
+  if (toInsert.length === 0) return 0;
+  const { error: insertError } = await supabase.from("categories").insert(toInsert);
+  fail(insertError);
+  return toInsert.length;
 }
 
-/**
- * After a category resync, match products that have a `category` text name but
- * no `category_id` FK. Updates them by matching the text name to a category row.
- */
-export async function relinkProductCategories(supabase: Client): Promise<{ linked: number; error: string | null }> {
-  // Fetch products that lost their category_id link
-  const { data: orphans, error: pErr } = await supabase
+/** Products that only have the old text `category` get the matching category id. */
+async function relinkProductCategories(supabase: Client): Promise<number> {
+  const { data: orphans, error } = await supabase
     .from("products")
     .select("id,category")
     .is("category_id", null)
     .not("category", "is", null);
-  if (pErr) return { linked: 0, error: pErr.message };
-  if (!orphans || orphans.length === 0) return { linked: 0, error: null };
+  fail(error);
+  if (!orphans || orphans.length === 0) return 0;
 
-  // Fetch all categories
-  const { data: cats, error: cErr } = await supabase.from("categories").select("id,name");
-  if (cErr) return { linked: 0, error: cErr.message };
+  const { data: cats, error: catError } = await supabase.from("categories").select("id,name");
+  fail(catError);
+  const nameToId = new Map((cats ?? []).map((c: { id: string; name: string }) => [c.name.toLowerCase(), c.id]));
 
-  const nameToId = new Map<string, string>(
-    (cats ?? []).map((c: { id: string; name: string }) => [c.name.toLowerCase(), c.id]),
-  );
-
-  const updates: Array<{ id: string; category_id: string }> = [];
-  for (const p of orphans as Array<{ id: string; category: string | null }>) {
-    if (!p.category) continue;
-    const catId = nameToId.get(p.category.toLowerCase());
-    if (catId) updates.push({ id: p.id, category_id: catId });
-  }
-
-  if (updates.length === 0) return { linked: 0, error: null };
-
-  // Batch update — Supabase browser client has no multi-row UPDATE, so iterate
-  await Promise.all(
-    updates.map(({ id, category_id }) =>
-      supabase.from("products").update({ category_id }).eq("id", id),
-    ),
-  );
-
-  return { linked: updates.length, error: null };
+  const updates = (orphans as Array<{ id: string; category: string | null }>).flatMap((p) => {
+    const categoryId = p.category ? nameToId.get(p.category.toLowerCase()) : undefined;
+    return categoryId ? [{ id: p.id, category_id: categoryId }] : [];
+  });
+  await Promise.all(updates.map((u) => supabase.from("products").update({ category_id: u.category_id }).eq("id", u.id)));
+  return updates.length;
 }
 
-/**
- * Remove all categories. Nulls out products.category_id first to satisfy the
- * FK RESTRICT constraint, then deletes root categories (cascades to children).
- */
-export async function clearAllCategories(supabase: Client): Promise<{ error: string | null }> {
-  const { error: unlinkErr } = await supabase
-    .from("products")
-    .update({ category_id: null })
-    .not("category_id", "is", null);
-  if (unlinkErr) return { error: unlinkErr.message };
+type CompetitorTree = Array<{ name: string; sub_categories: Array<{ name: string }> }>;
 
-  const { error } = await supabase.from("categories").delete().is("parent_id", null);
-  return { error: error?.message ?? null };
+/**
+ * Adds the e-katanalotis categories and subcategories that are missing here.
+ * Never renames, moves or deletes anything the shop already has.
+ */
+export async function syncCategoriesFromCompetitor(supabase: Client): Promise<{ added: number; linked: number }> {
+  const res = await fetch("/api/competitor-categories");
+  if (!res.ok) throw new Error(`e-katanalotis: ${res.status}`);
+  const tree = (await res.json()) as CompetitorTree;
+
+  const { data: roots, error } = await supabase.from("categories").select("id,name,sort_order").is("parent_id", null);
+  fail(error);
+  const start = (roots ?? []).reduce((max, r: { sort_order: number }) => Math.max(max, r.sort_order), -1) + 1;
+  let added = await importCategories(
+    supabase,
+    tree.map((c, i) => ({ name: c.name, sort_order: start + i, parent_id: null })),
+  );
+
+  const { data: topRows, error: topError } = await supabase.from("categories").select("id,name").is("parent_id", null);
+  fail(topError);
+  const idByName = new Map((topRows ?? []).map((r: { id: string; name: string }) => [r.name.toLowerCase(), r.id]));
+  const subs = tree.flatMap((c) => {
+    const parentId = idByName.get(c.name.toLowerCase());
+    return parentId ? c.sub_categories.map((s, i) => ({ name: s.name, sort_order: i, parent_id: parentId })) : [];
+  });
+  added += await importCategories(supabase, subs);
+
+  return { added, linked: await relinkProductCategories(supabase) };
 }
