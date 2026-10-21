@@ -12,7 +12,7 @@ import "./admin.css";
 
 const TABS = [
   { href: "/admin/products", key: "products" },
-  { href: "/admin/layouts", key: "flyers" },
+  { href: "/admin/flyers", key: "flyers" },
   { href: "/admin/categories", key: "categories" },
   { href: "/admin/store", key: "store" },
 ] as const;

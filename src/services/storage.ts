@@ -58,10 +58,15 @@ export async function resizeImage(file: File, maxSide: number, quality = 0.86): 
 export async function uploadImage(
   supabase: Client,
   file: File,
-  { bucket, folder, maxSide = 1600 }: { bucket: string; folder: string; maxSide?: number },
+  {
+    bucket,
+    folder,
+    maxSide = 1600,
+    maxInputBytes = MAX_INPUT_BYTES,
+  }: { bucket: string; folder: string; maxSide?: number; maxInputBytes?: number },
 ): Promise<string> {
   if (!file.type.startsWith("image/")) throw new UploadError("not-image");
-  if (file.size > MAX_INPUT_BYTES) throw new UploadError("too-large");
+  if (file.size > maxInputBytes) throw new UploadError("too-large");
 
   const body = await resizeImage(file, maxSide);
   const type = body.type || file.type;
